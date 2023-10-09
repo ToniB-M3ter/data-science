@@ -1,3 +1,4 @@
+
 import sys
 import importlib
 from statsmodels.tsa.api import SimpleExpSmoothing
@@ -50,12 +51,12 @@ def main():
 if __name__ == "__main__":
 
     filepath = '2_tidy/1h/'  # allow selection of data
-    metakey = 'usage_meta.gz'
+    metadatakey = 'usage_meta.gz'
     key = 'usage.gz'
 
     while True:
         if not dataloadcache:
-            dataloadcache = rs3.get_data(filepath, metakey, key)
+            dataloadcache = rs3.get_data(filepath, key, metadatakey)
         rs3.select_ts(dataloadcache)
         print("Press enter to re-run the script, CTRL-C to exit")
         sys.stdin.readline()
