@@ -3,6 +3,7 @@ import sys
 import importlib
 from statsmodels.tsa.api import SimpleExpSmoothing
 from pandas import DataFrame, Series, to_datetime
+import pandas as pd
 import plotly.express as px
 import readFromS3 as rs3
 
@@ -54,8 +55,13 @@ if __name__ == "__main__":
     metadatakey = 'usage_meta.gz'
     key = 'usage.gz'
 
+    dataloadcache= pd.DataFrame()
+    print(type(dataloadcache))
+    print(type(dataloadcache.empty))
+    print(dataloadcache.empty)
+
     while True:
-        if not dataloadcache:
+        if dataloadcache.empty:
             dataloadcache = rs3.get_data(filepath, key, metadatakey)
         rs3.select_ts(dataloadcache)
         print("Press enter to re-run the script, CTRL-C to exit")
