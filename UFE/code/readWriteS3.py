@@ -1,16 +1,17 @@
 import gzip, csv, os
 import pandas as pd
 import boto3
-from io import StringIO
+from io import StringIO, BytesIO, TextIOWrapper
 from botocore.exceptions import ClientError
 from tabulate import tabulate
 
-os.environ['DATABUCKET']  = 'm3ter-usage-forecasting-poc-demo-501098594448-eu-west-2'
+os.environ['DATABUCKET']  = 'm3ter-usage-forecasting-poc-m3ter-332767697772-us-east-1'
 os.environ['WRITE_BUCKET'] = 'tmbbucket'
 global DATABUCKET
 DATABUCKET = os.getenv('DATABUCKET')
 WRITE_BUCKET = os.getenv('WRITE_BUCKET')
-boto3.setup_default_session(profile_name='ml-alpha-admin') # Remove line and let boto3 find the role and set up default session when releasing
+boto3.setup_default_session(profile_name='m3ter-ml-labs-prod') #ml-alpha-admin
+# Remove line and let boto3 find the role and set up default session when releasing
 
 # Set service to s3
 s3 = boto3.resource("s3")
@@ -21,14 +22,14 @@ def datapath():
     key = 'usage.gz'
     return filepath, metakey, key
 
-def write_to_S3(data, data_name):
-    # set up for logging missing accounts
-    OBJECT_NAME ='logs/{}.txt'.format(data_name)
-    LAMBDA_LOCAL_TMP_FILE = '/tmp/{}.txt'.format(data_name)
-    with open(LAMBDA_LOCAL_TMP_FILE, 'w') as file:
-        writer = csv.writer(file)
-        writer.writerow(data)
-    s3.upload_file(LAMBDA_LOCAL_TMP_FILE, WRITE_BUCKET, OBJECT_NAME)
+def write_to_S3(df, filepath, key):
+    gz_buffer = BytesIO()
+
+    with gzip.GzipFile(mode='w', fileobj=gz_buffer) as gz_file:
+        df.to_csv(TextIOWrapper(gz_file, 'utf8'), index=False)
+
+    obj = s3.Object(DATABUCKET, filepath+key)
+    obj.put(Body=gz_buffer.getvalue())
     return
 
 def read_from_S3(filepath, key):
@@ -59,22 +60,40 @@ def get_data(filepath, key, metadatakey):
     df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%dT%H:%M:%SZ')
     df=df.sort_values('tm', ascending=True)
     df.dropna(subset=['y'], inplace = True) # need to generisise this
-    #print(tabulate(df.head(10), headers="keys" , tablefmt="psql")) # optional print of df
+    print(tabulate(df.head(10), headers="keys" , tablefmt="psql")) # optional print of df
     return df
 
-def select_ts(df):
-    print(df.astype(bool).sum(axis=0)) # count non-Nan's
+def get_data_local():
+    df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/data/dfUsage.csv')
+    df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%d %H:%M:%S')
+    return df
 
-    print('Unique accounts' + str(df['account'].unique()))
+def analyse_data(df):
+
+    #print(df.astype(bool).sum(axis=0))  # count non-Nan's
+
+    counts = df.notnull().groupby(df['account']).count()
+    print('Account Event Counts')
+    print(tabulate(counts, headers="keys", tablefmt="psql"))
+
+    return
+
+def select_ts(df):
+    analyse_data(df)
+    #print('Unique accounts' + str(df['account'].unique()))
     all = ['all','All','ALL']
     account = input('Enter an account or enter All: ' )
     if account in all:
-        # find time series for all accounts
-        meter = input('Enter a meter or enter All: ')
-        if meter in all:
-            # time series everything tha makes sense
-            pass
-        pass
+        print("Sample count of measurements by time-step")
+        df = df.groupby(['tm']).agg({'n_loads': 'count', 'n_events': 'count'})
+        # df = df.groupby(['tm', 'meter']).agg({'n_loads': 'count', 'n_events': 'count'}) # choose between loads and events
+        print(tabulate(df.head(5), headers="keys", tablefmt="psql"))
+        df.reset_index(names='tm', inplace=True)
+        df['y'] = df['n_loads']
+
+        # Select by meter?
+        #meter = input('Enter a meter or enter All: ')
+        #if meter in all:
     else:
         try:
             df = df.loc[(df['account'] == account)]
@@ -97,7 +116,7 @@ def select_ts(df):
     return df
 
 def main():
-    filepath, metadatakey, key = datapath()
+    filepath, metadatakey, key = datapath() # If calling directly get data location
     data = get_data(filepath, key, metadatakey)
     data = select_ts(data)
     return data
