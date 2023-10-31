@@ -133,20 +133,28 @@ def plot_HW_forecast_vs_actuals(p, models: list):
     return
 
 def prep_forecast_for_s3(dfForecast):
-    #df columns
+    # dfForecast columns
+    # idx, unique_id, ds, HW_A, HW_A - lo - 95, HW_A - hi - 95, HW_M, HW_M - lo - 95, HW_M - hi - 95, y
+
     cols = [
         'meter'
         'measurement'
         'account'
-        'account_id'       # account m3ter uid
-        'ts_id'            # ts unique id
-        '.model'           # model (e.g. model_)
-        'z'                # prediction
-        'tm'               # timestamp
-        'z0'               # lower bound of 95% confidence interval
-        'z1'               # lower bound of 95% confidence interval
+        'account_id'  # account m3ter uid
+        'ts_id'  # ts unique id
+        '.model'  # model (e.g. model_)
+        'z'  # prediction
+        'tm'  # timestamp
+        'z0'  # lower bound of 95% confidence interval
+        'z1'  # lower bound of 95% confidence interval
     ]
-    pass
+
+    # rename columns to match Shiny dashboard
+    dfForecast.rename(columns={'ds':'tm', 'HW_A': 'z', '':'', '':''}, inplace=True)
+
+
+
+    return dfForecast
 
 def main(dfUsage):
     plot(dfUsage, dfUsage['account'].iloc[0], dfUsage['meter'].iloc[0])

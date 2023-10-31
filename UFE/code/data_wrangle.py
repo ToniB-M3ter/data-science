@@ -25,7 +25,7 @@ dfUsage = dfUsage.dropna(subset=['org'])
 dfUsage['org'] = dfUsage['org'].astype(int)
 dfUsage['timeStamp'] = pd.to_datetime(dfUsage['timeStamp'], format='%Y-%m-%d %H:%M:%S')
 #dfUsage=dfUsage.set_index('timeStamp')
-dfUsage.to_csv('dfUsage.csv')
+dfUsage.to_csv('ml_alpha_dfUsage.csv')
 
 # Display Group by to user in order to see which org/meter/measure have the highest counts
 print('dfUsage groupby')

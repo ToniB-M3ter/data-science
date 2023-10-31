@@ -22,7 +22,7 @@ def datapath():
     key = 'usage.gz'
     return filepath, metakey, key
 
-def write_to_S3(df, filepath, key):
+def write_to_s3(df, filepath, key):
     gz_buffer = BytesIO()
 
     with gzip.GzipFile(mode='w', fileobj=gz_buffer) as gz_file:
@@ -80,10 +80,13 @@ def analyse_data(df):
 
 def select_ts(df):
     analyse_data(df)
-    #print('Unique accounts' + str(df['account'].unique()))
+    print(str(df['account'].nunique()) + ' Unique accounts')
     all = ['all','All','ALL']
-    account = input('Enter an account or enter All: ' )
+    account = input('Enter an account, all or count: ' )
     if account in all:
+        accounts = ['BurstSMS - Production','Prompt Production', 'Patagona - Production'] # subset of accounts that are known to work TODO add criteria to select ts which will work
+        df = df.loc[(df['account'].isin(accounts))]
+    elif account == 'count':
         print("Sample count of measurements by time-step")
         df = df.groupby(['tm']).agg({'n_loads': 'count', 'n_events': 'count'})
         # df = df.groupby(['tm', 'meter']).agg({'n_loads': 'count', 'n_events': 'count'}) # choose between loads and events
@@ -92,8 +95,8 @@ def select_ts(df):
         df['y'] = df['n_loads']
 
         # Select by meter?
-        #meter = input('Enter a meter or enter All: ')
-        #if meter in all:
+        # meter = input('Enter a meter or enter All: ')
+        # if meter in all:
     else:
         try:
             df = df.loc[(df['account'] == account)]
