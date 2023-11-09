@@ -1,10 +1,12 @@
 
 import sys, os, importlib
-from pandas import DataFrame, Series
 from time import time
+from datetime import datetime
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import matplotlib.pyplot as plt
+import matplotlib
 import readWriteS3 as rs3
 
 from statsmodels.tsa.seasonal import seasonal_decompose
@@ -32,57 +34,65 @@ def datapath():
     return tidyfilepath, key, metadatakey, forecastfilepath
 
 def select_date_range():
-    startdate = input('Start date (YYYY-mm-dd HH:MM:SS format)? ')
-    enddate = input('Start date (YYYY-mm-dd HH:MM:SS format)? ')
+    startdate_input = input('Start date (YYYY-mm-dd HH:MM:SS format)? ')
+    if startdate_input == '':
+        startdate = datetime.strptime('2023-10-01 00:00:00', '%Y-%m-%d %H:%M:%S')
+    else:
+        startdate = startdate_input
+
+
+    enddate_input = input('Start date (YYYY-mm-dd HH:MM:SS format)? ')
+    if enddate_input == '':
+        enddate = datetime.strptime('2023-11-07 00:00:00', '%Y-%m-%d %H:%M:%S')
+    else:
+        enddate = enddate_input
+
     return startdate, enddate
 
-def clean_data(df: DataFrame, datetime_col: str, y: str, startdate, enddate) -> DataFrame:
-    if startdate == 0 and enddate == 0:
-        startdate = df['tm'].min()
-        enddate = df['tm'].max()
-
+def clean_data(df: pd.DataFrame, datetime_col: str, y: str, startdate, enddate) -> pd.DataFrame:
     # filter dates
     datetime_mask = (df['tm'] > startdate) & (df['tm'] <= enddate)
-    df['y'] = df['y'].replace(0,1) # replace zeros with ones in order for model to work - maybe should be min value of series?
     df = df.loc[datetime_mask]
 
-    # save unique combinations of account_id, meter, measurement for later
+    # Remove zeros
+    #df['y'] = df['y'].replace(0,1) # replace zeros with ones in order for model to work - maybe should be min value of series?
+
+    # Remove whitespace from account name
+    df['account'] = df['account'].str.strip()
+
+    # save unique combinations of account_id, meter, and measurement for formatting forecast file before saving
     df_ids = df[['account', 'account_id', 'meter', 'measurement']].drop_duplicates()
     df_ids.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/df_ids.csv')
 
     # format for fitting and forecasting - select subset of columns and add unique_id column
-    init = time()
-    #df['unique_id'] = df.apply(lambda row: row.account.split(' ')[0] + '_' + row.meter + '_' +row.measurement.split(' ')[0], axis=1)
     df['unique_id'] = df.apply(
-        lambda row: row.account_id + '_' + row.meter + '_' + row.measurement.split(' ')[0], axis=1)
-    end = time()
-    # Let user know the time to fit all models
-    print(f'Data Wrangle Minutes: {(end - init) / 60}')
+        lambda row: row.account + '_' + row.meter + '_' + row.measurement.split(' ')[0], axis=1)
 
     df = df[[datetime_col, y, 'unique_id']]
     df.columns = ['ds', 'y', 'unique_id']
+    #df.sort_values(by=['unique_id', 'ds'], inplace=True)
 
+    print(df.groupby(['unique_id']).size().reset_index(name='counts'))
     # Tell user number of time series
     print(str(df['unique_id'].nunique()) + ' Unique Time Series')
 
+    # plot for inspection
+    x = StatsForecast.plot(df)
+    x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}'.format('ts_eng_input_data'))
+
     return df, df_ids
 
-def select_model_parms(datasize, freq, hpct=0.50, wpct=1)-> list:
+def select_model_parms(datasize, freq, wpct=1)-> list:
     '''
     This function determines the model parameters. The input parameters are:
     Datasize = length of the data.  Or alternatively, the number of timeperiods in the data set
     Frequency = Usage frequency.  Options are h = hourly; d = daily; w = weekly; or enter in frequency as an integer.
-    Horizon Percentage =  Percentage of data points into the future the horizon should be.
-        For example, if there are 100 usage measurements, and you would like to predict 10 points into the future enter 0.10.
-        Default is 0.5
     Window Size Percentage = Percentage of the data point used to train the model
         Default is 1
     '''
 
     models = ['autoETS'] # TODO organise for multiple models
     # configurable parameters
-    # horizon  = time periods into future for which a forecast will be made
-    horizon = round((datasize * hpct))
     # forecast window = time periods into the past used to train
     window = round((datasize * wpct))
     # set seasonality based on data frequency - this can also be determined by looking at the plot
@@ -94,79 +104,88 @@ def select_model_parms(datasize, freq, hpct=0.50, wpct=1)-> list:
         season = 52
     else: # user is defining the seasonality or has been calculated in another function....
         season = int(freq)
-    return models, season, horizon, window
+    return models, season, window
 
-def fit(df: DataFrame, season):
+def split_data(df):
+    #train = df.iloc[:int(0.75 * df['ds'].nunique())]  # TODO change 0.5 to horizon
+    #valid = df.iloc[int(0.25 * df['ds'].nunique()) + 1:]  # TODO change 0.5*len(df) to horizon
+    train = 1
+    valid = 2
+   # horizon (h)  = time periods into future for which a forecast will be made
+    h = round((len(df) * 0.15))
+    return train, valid, h
 
-    train = df.iloc[:int(0.75*df['ds'].nunique())] # TODO change 0.5 to horizon
-    valid = df.iloc[int(0.25*df['ds'].nunique())+1:] # TODO change 0.5*len(df) to horizon
-
-    # plot the training data
-    #plot_HW_train(train, df['unique_id'].iloc[0], 'train') #Need to do something to show plotly plots?
-    StatsForecast.plot(train, engine='matplotlib')
-    plt.show()
-
-    model_aliases=['AE', 'SN'] #TODO this list needs to be created dynamically
+def only_forecast(df: pd.DataFrame, h, season):
+    model_aliases=['AE'] #TODO this list needs to be created dynamically
 
     ts_models = [
-        AutoETS(model=['Z','Z','Z'], season_length=season, alias='AE'),
-        SeasonalNaive(season_length=season, alias='SN')
+        AutoETS(model=['Z','Z','Z'], season_length=season, alias='AE')
+        #AutoARIMA(season_length=season, alias='AA'),
+        #SeasonalNaive(season_length=season, alias='SN')
     ]
-        #AutoARIMA(season_length=season, alias='AA')]
-
-
 
     # create the model object, for each model and let user know time required for each fit
     model = StatsForecast(
                         models=ts_models,
                           freq = 'H',
-                          n_jobs=-1)
-                          #fallback_model = SeasonalNaive(season_length=24))
-
-    # Save model to S3 with some identifying name
+                          n_jobs=-1,
+                          fallback_model = SeasonalNaive(season_length=24))
 
     # record time for benchnmarking
-    init = time()
-    model.fit(train)
-    #forecast = model.forecast(h=1500, level=[95])
-    end=time()
 
-    # Let user know the time to fit all models
-    print(f'Forecast Minutes: {(end - init) / 60}')
+    forecast = model.forecast(df=df, h=h, level=[95])
 
-    h = round((valid['ds'].nunique()) * 0.5)
-    forecast = model.predict(h=h, level=[95])
-    forecast = forecast.reset_index().merge(valid, on=['ds','unique_id'], how='left')
-
-    model.plot(df, forecast, engine='plotly')
-    print(model.fitted_)
-
-    plot_HW_forecast_vs_actuals(forecast, model_aliases)
+    forecast_plot = StatsForecast.plot(df, forecast, engine='matplotlib')
+    forecast_plot.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}'.format('forecast_plot'))
+    #plot_HW_forecast_vs_actuals(forecast, model_aliases)
     return forecast, model_aliases
 
-def predict(model, valid):
-    h = round((valid['ds'].nunique()) * 0.5) # prediction 50% of the valid set's time interval into the future
-    # Set up models to fit: e.g. additive (HW_A) & multiplicative (HW_M)
-    model_aliases = ['AE']
+def fit(df: pd.DataFrame, h, season):
+    model_aliases=['AE'] #TODO this list needs to be created dynamically
+
+    ts_models = [
+        AutoETS(model=['Z','Z','Z'], season_length=season, alias='AE')
+        #AutoARIMA(season_length=season, alias='AA'),
+        #SeasonalNaive(season_length=season, alias='SN')
+    ]
+
+    # create the model object, for each model and let user know time required for each fit
+    model = StatsForecast(df=df,
+                        models=ts_models,
+                        freq = 'H',
+                        n_jobs=-1,
+                        verbose=True)
+
+    model.fit(df)
+    return model, model_aliases
+
+def predict(model, df, h):
     # predict future h periods, with 95% confidence level
-    p = model.predict(h=h, level=[95])
-    p = p.reset_index().merge(valid, on=['ds','unique_id'], how='left')
+    prediction = model.predict(h=h, level=[95])
+    print(prediction.head())
 
-    # plot predictions
-    plot_HW_forecast_vs_actuals(p, model_aliases)
-    return
+    # prep for plotting with confidence intervals
+    #prediction_merge = prediction.reset_index().merge(df, on=['ds','unique_id'], how='left')
+    #print(prediction_merge.head())
+    return prediction
 
-def plot(data: DataFrame, account: str, meter: str):
+def plot(data: pd.DataFrame, account: str, meter: str):
     fig = px.line(data, x='tm', y='y', title='Account: {} & Meter: {}'.format(account, meter))
     fig.show()
     return
 
-def plot_HW_train(data: DataFrame, TimeSeries: str, plot_type: str):
-    fig = px.line(data, x='ds', y='y', title='Time Series: {} {}'.format(TimeSeries, plot_type))
-    fig.show()
-    return
+def SF_plot(df, forecast_df):
+    #forecast_df.reset_index(inplace=True)
+    df['ds'] = np.arange(1, len(df) + 1)
+    forecast_df['ds'] = np.arange(len(df) + 1, len(df)+len(forecast_df) + 1)
+    #df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/df.csv')
+    #forecast_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/forecst_df.csv')
+    x = StatsForecast.plot(df, forecast_df, level=[95])
+    # Plot to unique_ids and some selected models
+    x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}.png'.format('ts_eng_forecast'))
 
 def plot_HW_forecast_vs_actuals(forecast, models: list):
+    print(forecast.head())
     # look for NaNs and remove for plotting
     print(str(forecast.isnull().any(axis=1).count()) + ' nulls in forecast' )
     forecast['y'] = forecast['y'].replace(0, 1)
@@ -177,8 +196,6 @@ def plot_HW_forecast_vs_actuals(forecast, models: list):
     # set number of subplots = number of timeseries
     min_subplots = 2
     numb_ts = min_subplots if min_subplots > forecast['unique_id'].nunique() else forecast['unique_id'].nunique() # ensure the number of subplots is > 1
-    print(numb_ts)
-    print(type(numb_ts))
 
     # Plot model by model
     for model_ in models:
@@ -203,6 +220,7 @@ def plot_HW_forecast_vs_actuals(forecast, models: list):
     return
 
 def prep_forecast_for_s3(df: pd.DataFrame, df_ids, model_aliases):
+    df.reset_index(inplace=True)
 
     dashboard_cols = [
         'tm'  # timestamp
@@ -218,7 +236,7 @@ def prep_forecast_for_s3(df: pd.DataFrame, df_ids, model_aliases):
     ]
 
     # add back meter, measurement, account and account_id
-    df['account_id'] = df['unique_id'].str.split('_', expand=True)[0]
+    df['account'] = df['unique_id'].str.split('_', expand=True)[0]
     df['meter'] = df['unique_id'].str.split('_', expand=True)[1]
     df['measurement'] = df['unique_id'].str.split('_', expand=True)[2]
     df = df.merge(df_ids[['account_id', 'account']], on='account_id', how='left')
@@ -237,22 +255,80 @@ def prep_forecast_for_s3(df: pd.DataFrame, df_ids, model_aliases):
     dfAll.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/all_forecasts.csv')
     return dfAll
 
+def prep_meta_data_for_s3():
+    # TODO change meta as dictionary passed parameter to function
+    meta = {'nm': 'typ', 'meter': 'dim', 'measurement': 'dim', 'account': 'dim', 'account_id': 'dim', '.model': 'dim', 'z': 'measure', 'tm': 'time', '_intrvl': '1h', 'z0': 'measure', 'z1': 'measure'}
+    meta_list = list(meta.items())
+    with open ('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmbmeta', 'w') as file: # TODO change to local temp folder
+        for i in meta_list:
+            file.write(','.join(map(str, i))+'\n')
+
+    print(type(file))
+    print(file)
+    return file
+
 def main(dfUsage):
+    ##################################
+    # plot time series  ##############
+    ##################################
     plot(dfUsage, dfUsage['account'].iloc[0], dfUsage['meter'].iloc[0])
+
+    ##################################
+    # Data Wrangle #########
+    ##################################
     startdate, enddate = select_date_range()
     dfUsage_clean, df_ids = clean_data(dfUsage, 'tm', 'y', startdate, enddate)
+    dfUsage_clean.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/dfUsage.csv')
+    models, season, window = select_model_parms(round(dfUsage_clean['ds'].nunique()), 'h', 1 ) # function parameters datasize, freq, hpct=0.5,
+    h = round(dfUsage_clean['ds'].nunique() * 0.15) # forecast horizon
 
-    models, season, horizon, window = select_model_parms(round(dfUsage_clean['ds'].nunique()), 'h', .5, 1 ) # function parameters datasize, freq, hpct=0.5, wpct=1
-    forecast, model_aliases = fit(dfUsage_clean, season)
+    ##################################
+    # split data #########
+    ##################################
+    #train,valid, h = split_data(dfUsage_clean)
+    #train.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/train.csv')
 
-    #forecast = predict(model, valid)
+    ##################################
+    # fit, predict, forecast #########
+    ##################################
+    # fit then forcast
+    init_fit = time()
+    model, model_aliases = fit(dfUsage_clean, h, season)
+    end_fit=time()
+    print(f'Fit Minutes: {(end_fit - init_fit) / 60}')
+    #model = rs3.read_model_from_s3()
+    init_predict = time()
+    forecast = predict(model, dfUsage_clean, h)
+    end_predict=time()
+    print(f'Predict Minutes: {(end_predict - init_predict) / 60}')
 
-    forecast_to_save = prep_forecast_for_s3(forecast, df_ids, model_aliases)
-    rs3.write_to_s3(forecast_to_save, forecastfilepath, 'tmb_mixed_model_'+key)
+    # forcast only
+    init_foreonly = time()
+    forecast_only, model_aliases = only_forecast(dfUsage_clean, h, season)
+    # dfUsage_clean[0:round(len(dfUsage_clean)*0.75)
+    end_foreonly = time()
+    print(f'Forecast Only Minutes: {(end_foreonly - init_foreonly) / 60}')
+
+    # plot predictions
+    # StatsForecast plot routine
+    SF_plot(dfUsage_clean, forecast_only)
+    #plot_HW_forecast_vs_actuals(forecast, model_aliases)
+
+    ##################################
+    # save to s3 if directed #########
+    ##################################
+    if savetos3 in ['Y','yes','Yes', 'YES', 'y']:
+        forecast_to_save = prep_forecast_for_s3(forecast, df_ids, model_aliases)
+        rs3.write_csv_to_s3(forecast_to_save, forecastfilepath, 'tmb_mixed_model_'+key)
+        metadatafile = prep_meta_data_for_s3()
+        rs3.write_meta_to_s3(metadatafile, forecastfilepath,'tmb_mixed_model_usage_meta.gz')
+    else:
+        forecast.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/only_forecst.csv')
     return
 
 if __name__ == "__main__":
     data_loc = input("Data location (local or s3)? ")
+    savetos3 = input("Save to s3? ")
     dataloadcache= pd.DataFrame()
 
     while True:

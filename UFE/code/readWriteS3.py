@@ -1,5 +1,6 @@
 import gzip, csv, os
 import pandas as pd
+import pickle
 import boto3
 from io import StringIO, BytesIO, TextIOWrapper
 from botocore.exceptions import ClientError
@@ -22,7 +23,7 @@ def datapath():
     key = 'usage.gz'
     return filepath, metakey, key
 
-def write_to_s3(df, filepath, key):
+def write_csv_to_s3(df, filepath, key):
     gz_buffer = BytesIO()
 
     with gzip.GzipFile(mode='w', fileobj=gz_buffer) as gz_file:
@@ -31,6 +32,29 @@ def write_to_s3(df, filepath, key):
     obj = s3.Object(DATABUCKET, filepath+key)
     obj.put(Body=gz_buffer.getvalue())
     return
+
+def write_meta_to_s3(file, filepath, key):
+
+    gz_buffer = StringIO
+    with gzip.GzipFile(filename=key+'meta.gz', compresslevel= 9, mode='w') as gz_file:
+        gz_buffer
+
+    obj = s3.Object(DATABUCKET, filepath+key)
+    obj.put(Body=key+'meta.gz')
+    return
+
+def write_model_to_s3(model, filepath, key):
+    with open('model.pkl', 'wb') as f:
+        #pickle.dump(model, f, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle_byte_obj = pickle.dump(model, f, protocol=pickle.HIGHEST_PROTOCOL)
+        obj = s3.Object(DATABUCKET, filepath+key)
+        obj.put(Body=pickle_byte_obj)
+    return
+
+def read_model_from_s3():
+    with open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/model.pkl', 'rb') as f:
+        model = pickle.load(f)
+    return model
 
 def read_from_S3(filepath, key):
     obj = s3.Object(DATABUCKET, filepath + key)
@@ -60,7 +84,6 @@ def get_data(filepath, key, metadatakey):
     df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%dT%H:%M:%SZ')
     df=df.sort_values('tm', ascending=True)
     df.dropna(subset=['y'], inplace = True) # need to generisise this
-    print(tabulate(df.head(10), headers="keys" , tablefmt="psql")) # optional print of df
     return df
 
 def get_data_local():
@@ -70,7 +93,7 @@ def get_data_local():
 
 def analyse_data(df):
 
-    #print(df.astype(bool).sum(axis=0))  # count non-Nan's
+    #df.astype(bool).sum(axis=0)  # count non-Nan's
 
     counts = df.notnull().groupby(df['account']).count()
     print('Account Event Counts')
@@ -80,38 +103,47 @@ def analyse_data(df):
 
 def select_ts(df):
     analyse_data(df)
+
+    # Select Account(s)
     print(str(df['account'].nunique()) + ' Unique accounts')
     all = ['all','All','ALL']
     account = input('Enter an account, all or count: ' )
     if account in all:
-        accounts = ['BurstSMS - Production','Prompt Production', 'Patagona - Production'] # subset of accounts that are known to work TODO add criteria to select ts which will work
+        #accounts = df['account'].unique()[0:30]
+        accounts = ['AssembledHQ Prod',
+                    'BurstSMS - Production',
+                    'Burst SMS - Local Test',
+                    'Sift Forecasting',
+                    'Onfido Dev',
+                    'Onfido Prod',
+                    'Patagona - Sandbox',
+                    'Patagona - Production',
+                    'Regal.io Prod',
+                    'm3terBilllingOrg Production',
+                    'Tricentis Prod'] # subset of accounts that are known to work TODO add criteria to select ts which will work
         df = df.loc[(df['account'].isin(accounts))]
     elif account == 'count':
         print("Sample count of measurements by time-step")
         df = df.groupby(['tm']).agg({'n_loads': 'count', 'n_events': 'count'})
         # df = df.groupby(['tm', 'meter']).agg({'n_loads': 'count', 'n_events': 'count'}) # choose between loads and events
-        print(tabulate(df.head(5), headers="keys", tablefmt="psql"))
+        print(tabulate(df.head(50), headers="keys", tablefmt="psql"))
         df.reset_index(names='tm', inplace=True)
-        df['y'] = df['n_loads']
-
-        # Select by meter?
-        # meter = input('Enter a meter or enter All: ')
-        # if meter in all:
     else:
         try:
             df = df.loc[(df['account'] == account)]
         except:
             print("That account doesn't exist")
-        print("Account's Unique meters")
-        print(df['meter'].unique())
-        meter = input('Enter a meter or enter All? ')
-        if meter in all:
-            pass
-        else:
-            try:
-                df = df.loc[(df['account']==account) & (df['meter']==meter)]
-            except:
-                print("That meter doesn't exist")
+
+    # Select meter
+    print(df['meter'].unique())
+    meter = input('Enter a meter? ')
+    if meter in all:
+        pass
+    else:
+        try:
+            df = df.loc[df['meter'] == meter]
+        except:
+            print("That meter doesn't exist")
 
     print(str(len(df)) + ' records from ' + str(df['tm'].min()) + ' to ' + str(df['tm'].max()) )
 
