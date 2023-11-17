@@ -8,7 +8,15 @@ import matplotlib.dates as mdates
 import seaborn as sns
 import plotly.express as px
 import sklearn
-import sys
+import boto3
+s3 = boto3.resource("s3")
+s3client = boto3.client("s3")
+import sys, os
+import pickle
+import gzip
+from io import StringIO, BytesIO, TextIOWrapper
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 # data wrangling
 import numpy as np
@@ -23,6 +31,12 @@ from statsmodels.tsa.holtwinters import SimpleExpSmoothing
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from statsmodels.tsa.seasonal import STL
 
+os.environ['DATABUCKET']  = 'm3ter-usage-forecasting-poc-m3ter-332767697772-us-east-1'
+DATABUCKET = os.getenv('DATABUCKET')
+boto3.setup_default_session(profile_name='m3ter-ml-labs-prod') #ml-alpha-admin
+
+# Set service to s3
+s3 = boto3.resource("s3")
 
 plt.style.use('Solarize_Light2')
 # set up for matplotlib/seaborn plotting
@@ -31,6 +45,7 @@ pd.plotting.register_matplotlib_converters()
 # Default figure size
 sns.mpl.rc("figure", figsize=(16, 6))
 sns.mpl.rc("font", size=14)
+
 
 def plot_raw(data: pd.DataFrame, title: str):
     fig, ax = plt.subplots()
@@ -49,9 +64,6 @@ def plot_forecast(res, title):
     #res.predict().plot(ax=ax)
     plt.show()
     return
-
-def heatmap():
-    pass
 
 def get_housing_data():
     data = pdr.get_data_fred("HOUSTNSA", "1959-01-01", "2019-06-01")
@@ -140,17 +152,180 @@ def fit_data(data):
     print(res.summary())
     return res
 
+def write_model_to_s3(model, filepath, key):
+    with open('model.pkl', 'wb') as f:
+        #pickle.dump(model, f, protocol=pickle.HIGHEST_PROTOCOL)
+        bytes_output = BytesIO()
+        pickle_byte_obj = pickle.dump(model, bytes_output, protocol=HIGHEST_PROTOCOL)
+        #pickle_byte_obj = pickle.dump(model, f, protocol=pickle.HIGHEST_PROTOCOL)
+        obj = s3.Object(DATABUCKET, filepath+key)
+        obj.put(Body=pickle_byte_obj)
+    return
+
+def write_model_to_s3_2(model):
+    filepath = 'UFE/models/'
+    key = 'tmbtest_model.pkl'
+
+    # serialise and write to temp file
+    with open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/model.pkl', 'wb') as f:
+        pickle.dump(model, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # open temp file
+    with open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/model.pkl', 'rb') as f:
+        # write
+        response = boto3.client('s3').put_object(
+            Body=f,
+            Bucket='m3ter-usage-forecasting-poc-m3ter-332767697772-us-east-1',
+            Key='4_fit/1h/tmbtest_model.pkl'
+        )
+    return
+
+def read_model_from_s3(filepath, key):
+    s3 = boto3.resource('s3')
+    model = pickle.loads(s3.Bucket(DATABUCKET).Object(filepath + key).get()['Body'].read())
+    print(type(model))
+    return model
+
+def prep_meta_data_for_s3_new():
+    BUCKET = 'm3ter-usage-forecasting-poc-m3ter-332767697772-us-east-1',
+    gzbuffer = StringIO()
+
+    # Set service to s3
+    s3 = boto3.resource("s3")
+
+    meta = {'nm': 'typ', 'meter': 'dim', 'measurement': 'dim', 'account': 'dim', 'account_id': 'dim', '.model': 'dim', 'z': 'measure', 'tm': 'time', '_intrvl': '1h', 'z0': 'measure', 'z1': 'measure'}
+    meta_list = list(meta.items())
+
+    writer = gzip.GzipFile(None, 'w', 6, gzbuffer)
+    for line in meta_list:
+        writer.write(','.join(map(str, line))+'\n')
+    writer.close()
+    #file = gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmbmeta.gz', 'wt')
+    #for line in meta_list:
+    #    file.write(','.join(map(str, line))+'\n')
+    #file.close()
+    # response = boto3.client('s3').put_object(
+    #     Body=gzbuffer.getvalue(),
+    #     Bucket='m3ter-usage-forecasting-poc-m3ter-332767697772-us-east-1',
+    #     Key='4_fit/1h/tmbmeta.gz'
+    # )
+    return
+
+def prep_meta_data_for_s3():
+    # TODO change meta as dictionary passed parameter to function
+    meta = {'nm': 'typ', 'meter': 'dim', 'measurement': 'dim', 'account': 'dim', 'account_id': 'dim', '.model': 'dim', 'z': 'measure', 'tm': 'time', '_intrvl': '1h', 'z0': 'measure', 'z1': 'measure'}
+    meta_list = list(meta.items())
+    with open ('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmbmeta.gz', 'w') as file: # TODO change to local temp folder
+        for i in meta_list:
+            file.write(','.join(map(str, i))+'\n')  # file type => _io.TextIOWrapper
+    return file
+
+def write_meta_to_s3(file, filepath, key):
+    meta = {'nm': 'typ', 'meter': 'dim', 'measurement': 'dim', 'account': 'dim', 'account_id': 'dim', '.model': 'dim', 'z': 'measure', 'tm': 'time', '_intrvl': '1h', 'z0': 'measure', 'z1': 'measure'}
+    meta_list = list(meta.items())
+
+    gz_buffer = BytesIO
+    with gzip.GzipFile(mode='w', fileobj=gz_buffer) as gz_file:
+        for line in meta_list:
+            gz_file.write((','.join(map(str, line)) + '\n').encode())
+            # bytes() is an easy way to convert StringIO()'s .getvalue() string to bytes! Then you can gzip it.
+    print(type(gz_file))
+    obj = s3.Object(DATABUCKET, filepath+key)
+    obj.put(Body=gz_buffer.get_value())
+    return
+
+def only_bytes(filepath, key):
+    s3client = boto3.client("s3")
+    meta_bytes = b"""nm, typ
+    meter, dim
+    measurement, dim
+    account, dim
+    account_id, dim
+    model, dim
+    z, measure 
+    tm, time 
+    _intrvl, 1h
+    z0, measure
+    z1, measure"""
+
+    with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/file.txt.gz', 'wb') as f:
+        f.write(meta_bytes)
+
+    with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/file.txt.gz', 'rb') as f:
+        #obj = s3.Object(DATABUCKET, filepath + key)
+        #obj.put(Body=f)
+        s3client.put_object(Bucket=DATABUCKET, Body=f, Key=filepath+key)
+    return
+
+def bytes_with_buffer(filepath, key):
+    meta_bytes = b"""nm, typ
+    meter, dim
+    measurement, dim
+    account, dim
+    account_id, dim
+    model, dim
+    z, measure 
+    tm, time 
+    _intrvl, 1h
+    z0, measure
+    z1, measure"""
+
+    buff = BytesIO()
+    with gzip.GzipFile(fileobj=buff, mode='wb') as g:
+       g.write(buff.getvalue())
+       buff.seek(0)
+    obj = s3.Object(DATABUCKET, filepath + key)
+    obj.put(Body=buff.getvalue())
+
+    s3client.upload_fileobj(Bucket=DATABUCKET, Fileobj=buff, Key=filepath+key)
+
+def only_strings(filepath, key):
+    meta_bytes=b"""nm, typ
+    meter, dim
+    measurement, dim
+    account, dim
+    account_id, dim
+    model, dim
+    z, measure 
+    tm, time 
+    _intrvl, 1h
+    z0, measure
+    z1, measure"""
+
+    obj = s3.Object(DATABUCKET, filepath + key)
+    obj.put(Body=meta_bytes)
+
+def write_csv_to_s3(df, filepath, key):
+    gz_buffer = BytesIO()
+
+    with gzip.GzipFile(mode='w', fileobj=gz_buffer) as gz_file:
+        df.to_csv(TextIOWrapper(gz_file, 'utf8'), index=False)
+
+    obj = s3.Object(DATABUCKET, filepath+key)
+    obj.put(Body=gz_buffer.getvalue())
+    return
+
+
 def main():
     #get_nixtla_data()
-    df = get_engine_data()
-    model_aliases=['AE', 'SN']
-    convert_to_dashboard_format(df, model_aliases)
+    #df = get_engine_data()
+    #model_aliases=['AE', 'SN']
+    #convert_to_dashboard_format(df, model_aliases)
     #data, title = get_housing_data()
     #heatmap()
     #smoothing(data)
     #decompose(data)
     #res = fit_data(data)
     #plot_forecast(res, title)
+
+    ################################################
+    # compressing, uncompressing, reading, writing to s3
+    #read_model_from_s3('4_fit/1h/', 'Prompt_model.pkl')
+    #prep_meta_data_for_s3_new()
+    #metadatafile = prep_meta_data_for_s3()
+    #write_meta_to_s3(metadatafile, '4_fit/1h/', 'tmbmeta.gz')
+    #only_strings('4_fit/1h/', 'tmbmeta.txt')
+    only_bytes('4_fit/1h/', 'tmbmeta.gz')
     return
 
 

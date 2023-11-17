@@ -16,9 +16,10 @@ boto3.setup_default_session(profile_name='m3ter-ml-labs-prod') #ml-alpha-admin
 
 # Set service to s3
 s3 = boto3.resource("s3")
+s3client = boto3.client("s3")
 
-def datapath():
-    filepath = '2_tidy/1h/'  # allow selection of data
+def datapath(freq):
+    filepath = '2_tidy/' + freq  # allow selection of data
     metakey = 'usage_meta.gz'
     key = 'usage.gz'
     return filepath, metakey, key
@@ -33,25 +34,45 @@ def write_csv_to_s3(df, filepath, key):
     obj.put(Body=gz_buffer.getvalue())
     return
 
-def write_meta_to_s3(file, filepath, key):
+def write_meta_to_s3(metadata_str, filepath, key):
+    metadata_byte = metadata_str.encode()
+    meta_bytes = \
+    b"""nm, typ
+    meter, dim
+    measurement, dim
+    account, dim
+    account_id, dim
+    model, dim
+    z, measure 
+    tm, time 
+    _intrvl, 1h
+    z0, measure
+    z1, measure"""
 
-    gz_buffer = StringIO
-    with gzip.GzipFile(filename=key+'meta.gz', compresslevel= 9, mode='w') as gz_file:
-        gz_buffer
+    with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmpmeta.txt.gz', 'wb') as f:
+        f.write(meta_bytes)
 
-    obj = s3.Object(DATABUCKET, filepath+key)
-    obj.put(Body=key+'meta.gz')
+    with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmpmeta.txt.gz', 'rb') as f:
+        # obj = s3.Object(DATABUCKET, filepath + key)
+        # obj.put(Body=f)
+        s3client.put_object(Bucket=DATABUCKET, Body=f, Key=filepath + key)
     return
 
 def write_model_to_s3(model, filepath, key):
-    with open('model.pkl', 'wb') as f:
-        #pickle.dump(model, f, protocol=pickle.HIGHEST_PROTOCOL)
-        pickle_byte_obj = pickle.dump(model, f, protocol=pickle.HIGHEST_PROTOCOL)
-        obj = s3.Object(DATABUCKET, filepath+key)
-        obj.put(Body=pickle_byte_obj)
+    serialised_model = pickle.dumps(model, protocol=pickle.HIGHEST_PROTOCOL)
+
+    response = boto3.client('s3').put_object(
+        Body=serialised_model,
+        Bucket=DATABUCKET,
+        Key=filepath+key
+    )
     return
 
-def read_model_from_s3():
+def read_model_from_s3(filepath, key):
+    model = pickle.loads(s3.Bucket(DATABUCKET).Object(filepath + key).get()['Body'].read())
+    return model
+
+def read_model_from_local():
     with open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/model.pkl', 'rb') as f:
         model = pickle.load(f)
     return model
@@ -83,8 +104,8 @@ def get_data(filepath, key, metadatakey):
     df.columns=headers
     df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%dT%H:%M:%SZ')
     df=df.sort_values('tm', ascending=True)
-    df.dropna(subset=['y'], inplace = True) # need to generisise this
-    return df
+    df.dropna(subset=['y'], inplace = True) # need to generalise this
+    return df, metadata_str
 
 def get_data_local():
     df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/data/dfUsage.csv')
@@ -92,13 +113,10 @@ def get_data_local():
     return df
 
 def analyse_data(df):
-
     #df.astype(bool).sum(axis=0)  # count non-Nan's
-
     counts = df.notnull().groupby(df['account']).count()
     print('Account Event Counts')
     print(tabulate(counts, headers="keys", tablefmt="psql"))
-
     return
 
 def select_ts(df):
@@ -109,23 +127,22 @@ def select_ts(df):
     all = ['all','All','ALL']
     account = input('Enter an account, all or count: ' )
     if account in all:
-        #accounts = df['account'].unique()[0:30]
-        accounts = ['AssembledHQ Prod',
-                    'BurstSMS - Production',
-                    'Burst SMS - Local Test',
-                    'Sift Forecasting',
-                    'Onfido Dev',
-                    'Onfido Prod',
-                    'Patagona - Sandbox',
-                    'Patagona - Production',
-                    'Regal.io Prod',
-                    'm3terBilllingOrg Production',
-                    'Tricentis Prod'] # subset of accounts that are known to work TODO add criteria to select ts which will work
+        accounts = df['account'].unique()
+        # accounts = ['AssembledHQ Prod',
+        #             'BurstSMS - Production',
+        #             'Burst SMS - Local Test',
+        #             'Sift Forecasting',
+        #             'Onfido Dev',
+        #             'Onfido Prod',
+        #             'Patagona - Sandbox',
+        #             'Patagona - Production',
+        #             'Regal.io Prod',
+        #             'm3terBilllingOrg Production',
+        #             'Tricentis Prod'] # subset of accounts that are known to work TODO add criteria to select ts which will work
         df = df.loc[(df['account'].isin(accounts))]
     elif account == 'count':
         print("Sample count of measurements by time-step")
         df = df.groupby(['tm']).agg({'n_loads': 'count', 'n_events': 'count'})
-        # df = df.groupby(['tm', 'meter']).agg({'n_loads': 'count', 'n_events': 'count'}) # choose between loads and events
         print(tabulate(df.head(50), headers="keys", tablefmt="psql"))
         df.reset_index(names='tm', inplace=True)
     else:
@@ -146,12 +163,12 @@ def select_ts(df):
             print("That meter doesn't exist")
 
     print(str(len(df)) + ' records from ' + str(df['tm'].min()) + ' to ' + str(df['tm'].max()) )
-
-    print(tabulate(df.head(10), headers="keys", tablefmt="psql"))
-    return df
+    return df, account.replace( ' ', '')
 
 def main():
-    filepath, metadatakey, key = datapath() # If calling directly get data location
+    freq_input = input("Hourly (1h) or Daily (1D) frequency: ")
+    freq = freq_input + '/'
+    filepath, metadatakey, key = datapath(freq) # If calling directly get data location
     data = get_data(filepath, key, metadatakey)
     data = select_ts(data)
     return data
