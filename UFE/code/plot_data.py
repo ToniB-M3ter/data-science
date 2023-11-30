@@ -1,12 +1,70 @@
+"""
+Key Objects and Dataframes:
+tags: Dictionary where each key is a level and its value contains tags associated to that level.
+S_df:
+df: cleaned input data
+Y_train_df: training data
+Y_test_df: test data
+Y_h: observed data including aggregations
+Y_hat_df: Base Forecasts NB predictions will not be coherent at this point; forcast future dates
+Y_fitted_df: Fitted data from tmin - tmax (training time range)
+Y_rec_df: Coherent reconciled predictions
+
+"""
 
 import sys
 import importlib
 import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
-import readWriteS3 as rs3
 
-def clean_data(df):
+from dash import Dash, dcc, html, Input, Output
+import plotly.express as px
+
+app = Dash(__name__)
+
+
+def simple_example():
+
+    # gapminder population data 1704 rows
+    # country
+    # continent
+    # year
+    # lifeExp
+    # pop
+    # gdpPercap
+    # iso_alpha
+    # iso_num
+
+    df = px.data.gapminder().query("continent=='Oceania'")
+    fig = px.line(df, x="year", y="lifeExp", color='country')
+    fig.show()
+    return
+
+def dash_example():
+    app.layout = html.Div([
+        html.H4('Life expentancy progression of countries per continents'),
+        dcc.Graph(id="graph"),
+        dcc.Checklist(
+            id="checklist",
+            options=["Asia", "Europe", "Africa", "Americas", "Oceania"],
+            value=["Americas", "Oceania"],
+            inline=True
+        ),
+    ])
+
+    @app.callback(
+        Output("graph", "figure"),
+        Input("checklist", "value"))
+    def update_line_chart(continents):
+        df = px.data.gapminder()  # replace with your own data source
+        mask = df.continent.isin(continents)
+        fig = px.line(df[mask],
+                      x="year", y="lifeExp", color='country')
+        return fig
+
+    app.run_server(debug=True)
+
+def clean_raw_data(df):
     print(df.head())
 
     # Set parms for heat map
@@ -35,7 +93,6 @@ def clean_data(df):
     print(df.shape)
     return df
 
-
 def heatmap(data):
     #plt.figure(figsize=(20, 20), facecolor='w', edgecolor='k')
     plt.figure(facecolor='w', edgecolor='k')
@@ -54,10 +111,69 @@ def heatmap(data):
     plt.show()
     return
 
+def transpose_data(df, freq, col):
+    if 'ds' in df.columns:
+        if freq == '1D':
+            df['ds'] = pd.to_datetime(df['ds'], format="%Y-%m-%d")
+        elif freq == '1h':
+            df['ds'] = pd.to_datetime(df['ds'])
+        # df.reset_index(drop=True)
+        df.set_index('ds', inplace=True)
+
+    print(df.head(1))
+    models = df.columns[1:]
+
+    # list of unique_ids
+    unique_ids = df['unique_id'].unique()
+
+    dfs = []
+
+    for id in unique_ids:
+        dftmp = df.loc[df['unique_id']==id]
+        dfs.append(dftmp[col])
+
+    #for i in dfs:
+    #    print(i.head())
+
+    dfAll = pd.concat(dfs, axis=1)
+    # need to create columns for all models/accounts
+    # model_ids = []
+    # for model in models:
+    #     model_ids_temp = [x + '_' + model for x in unique_ids]
+    #     model_ids.append(model_ids_temp)
+    # print(model_ids)
+
+    dfAll.columns = unique_ids
+    #print(dfAll.head())
+    return dfAll
+
+
 def main():
-    data = pd.read_csv('/UFE/data/dfUsage.csv')
-    data = clean_data(data)
-    heatmap(data)
+
+
+    #rawdata = pd.read_csv('/UFE/data/dfUsage_28.csv')
+    #data = clean_raw_data(rawdata)
+    #heatmap(data)
+
+    Y_train = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_train.csv', index_col='Unnamed: 0')
+    Y_test = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_test.csv', index_col='Unnamed: 0')
+    Y_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_df.csv') # observed data including aggregations
+    Y_hat_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_hat_df.csv')  # Base Forecasts NB predictions will not be coherent at this point
+    Y_fitted_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_fitted_df.csv') # Fitted data from tmin - tmax
+    Y_rec_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_rec_df.csv') # hierarchial reconciled data
+
+    Y_train_T = transpose_data(Y_train, '1D', 'y')
+    Y_train_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_train_T.csv')
+
+    Y_df_T = transpose_data(Y_df, '1D', 'y')
+    Y_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_df_T.csv')
+
+    Y_hat_df_T = transpose_data(Y_hat_df, '1D', 'AutoETS')
+    Y_hat_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_hat_df_AE_T.csv')
+    Y_hat_df_T = transpose_data(Y_hat_df, '1D', 'Naive')
+    Y_hat_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_hat_df_N_T.csv')
+
+
     return
 
 

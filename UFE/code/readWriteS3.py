@@ -120,31 +120,28 @@ def analyse_data(df):
     return
 
 def select_ts(df):
-    analyse_data(df)
+    #analyse_data(df)
 
     # Select Account(s)
     print(str(df['account'].nunique()) + ' Unique accounts')
     all = ['all','All','ALL']
-    account = input('Enter an account, all or count: ' )
+    account = input('Enter an account, all or small: ' )
     if account in all:
         accounts = df['account'].unique()
-        # accounts = ['AssembledHQ Prod',
-        #             'BurstSMS - Production',
-        #             'Burst SMS - Local Test',
-        #             'Sift Forecasting',
-        #             'Onfido Dev',
-        #             'Onfido Prod',
-        #             'Patagona - Sandbox',
-        #             'Patagona - Production',
-        #             'Regal.io Prod',
-        #             'm3terBilllingOrg Production',
-        #             'Tricentis Prod'] # subset of accounts that are known to work TODO add criteria to select ts which will work
         df = df.loc[(df['account'].isin(accounts))]
-    elif account == 'count':
-        print("Sample count of measurements by time-step")
-        df = df.groupby(['tm']).agg({'n_loads': 'count', 'n_events': 'count'})
-        print(tabulate(df.head(50), headers="keys", tablefmt="psql"))
-        df.reset_index(names='tm', inplace=True)
+    elif account == 'small':
+        accounts = ['AssembledHQ Prod',
+                    'BurstSMS - Production',
+                    'Burst SMS - Local Test',
+                    'Sift Forecasting',
+                    'Onfido Dev',
+                    'Onfido Prod',
+                    'Patagona - Sandbox',
+                    'Patagona - Production',
+                    'Regal.io Prod',
+                    'm3terBilllingOrg Production',
+                    'Tricentis Prod'] # subset of accounts that are known to work TODO add criteria to select ts which will work
+        df = df.loc[(df['account'].isin(accounts))]
     else:
         try:
             df = df.loc[(df['account'] == account)]

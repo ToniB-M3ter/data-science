@@ -1,18 +1,18 @@
 
-import sys, os, importlib
+import sys, importlib
 from time import time
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import pandas as pd
-import numpy as np
 import plotly.express as px
 import matplotlib.pyplot as plt
-import matplotlib
+
 import readWriteS3 as rs3
+import error_analysis as err
 
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsforecast import StatsForecast
-from sklearn.metrics import mean_absolute_percentage_error
+#from sklearn.metrics import mean_absolute_percentage_error
 
 from statsforecast.models import (
     SeasonalNaive, # model using the previous season's data as the forecast
@@ -43,7 +43,7 @@ def select_date_range(data_freq):
     else:
         startdate = startdate_input
 
-    enddate_input = input('Start date (YYYY-mm-dd HH:MM:SS format)? ')
+    enddate_input = input('End date (YYYY-mm-dd HH:MM:SS format)? ')
     if enddate_input == '':
         enddate = datetime.today() - relativedelta(days=1)
     else:
@@ -59,7 +59,9 @@ def clean_data(df: pd.DataFrame, datetime_col: str, y: str, startdate, enddate) 
     print('Fit from '  + str(startdate) +' to '+ str(enddate))
 
     # Remove whitespace from account name
-    df['account'] = df['account'].str.strip()
+    tmp_df = df['account'].copy()
+    #tmp_df.replace(' ', '', regex=True, inplace=True)
+    df['account'] = tmp_df
 
     # save unique combinations of account_id, meter, and measurement for formatting forecast file before saving
     df_ids = df[['account', 'account_id', 'meter', 'measurement']].drop_duplicates()
@@ -79,7 +81,7 @@ def clean_data(df: pd.DataFrame, datetime_col: str, y: str, startdate, enddate) 
 
     # plot for inspection
     x = StatsForecast.plot(df)
-    x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}'.format('ts_eng_input_data'))
+    #x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}'.format('ts_eng_input_data'))
 
     return df, df_ids
 
@@ -89,7 +91,7 @@ def split_data(df):
     train = 1
     valid = 2
    # horizon (h)  = time periods into future for which a forecast will be made
-    h = round((len(df) * 0.15))
+    h = round((len(df) * 0.10))
     return train, valid, h
 
 def only_forecast(df: pd.DataFrame, h, data_freq):
@@ -103,22 +105,37 @@ def only_forecast(df: pd.DataFrame, h, data_freq):
     model_aliases=['AE'] #TODO this list needs to be created dynamically
 
     ts_models = [
-        AutoETS(model=['Z','Z','Z'], season_length=season, alias='AE')
+        AutoETS(model=['Z','Z','Z'], season_length=season, alias='AE'),
         #AutoARIMA(season_length=season, alias='AA'),
-        #SeasonalNaive(season_length=season, alias='SN')
+        SeasonalNaive(season_length=season, alias='SN'),
+        Naive(alias='N')
     ]
 
     # create the model object, for each model and let user know time required for each fit
     model = StatsForecast(
+                        df = df,
                         models=ts_models,
                           freq =data_freq,
                           n_jobs=-1,
-                          fallback_model = SeasonalNaive(season_length=24))
+                          fallback_model=SeasonalNaive(season_length=24))
+                          #fallback_model = SeasonalNaive(season_length=24))
 
     forecast = model.forecast(df=df, h=h, level=[95])
 
+    # Plot specific unique_ids and models
+    forecast_plot_small = model.plot(
+        df,
+        forecast,
+        models=["AutoETS", "SeasonalNaive"], unique_ids=["BurstSMS - Local Test_billing_bill", "Patagona - Production_billing_bill", "Sift Forecasting_billing_bill"],
+        level=[95],
+        engine='plotly')
+    forecast_plot_small.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}'.format('forecast_plot_small'))
     forecast_plot = StatsForecast.plot(df, forecast, engine='matplotlib')
     forecast_plot.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}'.format('forecast_plot'))
+
+    ts = df['unique_id'].values[0]
+    res_rmse = err.cross_validate(df, model, h, ts)
+
     #plot_HW_forecast_vs_actuals(forecast, model_aliases)
     return forecast, model_aliases
 
@@ -152,7 +169,7 @@ def predict(model, df, h):
     # predict future h periods, with level of confidence
     prediction = model.predict(h=h, level=[95])
 
-    # prep for plotting with confidence intervals
+    # prep for plotting with prediction intervals
     #prediction_merge = prediction.reset_index().merge(df, on=['ds','unique_id'], how='left')
     #print(prediction_merge.head())
     return prediction
@@ -161,16 +178,6 @@ def plot(data: pd.DataFrame, account: str, meter: str):
     fig = px.line(data, x='tm', y='y', title='Account: {} & Meter: {}'.format(account, meter))
     fig.show()
     return
-
-def SF_plot(df, forecast_df):
-    #forecast_df.reset_index(inplace=True)
-    df['ds'] = np.arange(1, len(df) + 1)
-    forecast_df['ds'] = np.arange(len(df) + 1, len(df)+len(forecast_df) + 1)
-    #df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/df.csv')
-    #forecast_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/forecst_df.csv')
-    x = StatsForecast.plot(df, forecast_df, level=[95])
-    # Plot to unique_ids and some selected models
-    x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}.png'.format('ts_eng_forecast'))
 
 def plot_HW_forecast_vs_actuals(forecast, models: list):
     #print(forecast.head())
@@ -214,32 +221,29 @@ def prep_forecast_for_s3(df: pd.DataFrame, df_ids, model_aliases):
         , 'measurement'
         , 'account_id'  # account m3ter uid
         , 'account'
-        , 'ts_id'  # ts unique id
+        #, 'ts_id'  # ts unique id
         , 'z'  # prediction
         , 'z0'  # lower bound of 95% confidence interval
         , 'z1'  # lower bound of 95% confidence interval
         , '.model'  # model (e.g. model_)
     ]
 
-    # add back meter, measurement, account and account_id
-    df['account'] = df['unique_id'].str.split('_', expand=True)[0]
-    df['meter'] = df['unique_id'].str.split('_', expand=True)[1]
-    df['measurement'] = df['unique_id'].str.split('_', expand=True)[2]
-    #df = df.merge(df_ids[['account_id', 'account']], on='account_id', how='left')  # to merge on account_id
-    df = df.merge(df_ids[['account_id', 'account']], on='account', how='left')
+    pat = "|".join(df_ids.account)
+    df.insert(0, 'account', df['unique_id'].str.extract("(" + pat + ')', expand=False))
+    df = df.merge(df_ids[['meter','measurement', 'account_id', 'account']], on='account')
+    df = df[['ds','meter','measurement', 'account_id', 'account', 'AE', 'AE-lo-95', 'AE-hi-95']]
 
     dfs = []
 
     for alias in model_aliases:
         iterator_list = ['df' + alias, alias, alias + '-lo-95', alias + '-hi-95']
-        iterator_list[0] = df[['ds', 'meter', 'measurement', 'account_id', 'account', 'unique_id', iterator_list[1], iterator_list[2], iterator_list[3]]]
+        iterator_list[0] = df[['ds', 'meter', 'measurement', 'account_id', 'account', iterator_list[1], iterator_list[2], iterator_list[3]]]
         iterator_list[0]['.model'] = alias
         iterator_list[0].columns = dashboard_cols
         dfs.append(iterator_list[0])
 
     dfAll = pd.concat(dfs, ignore_index=True)
-
-    dfAll.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/all_forecasts.csv')
+    dfAll.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/all_forecasts_test.csv')
     return dfAll
 
 def prep_meta_data_for_s3():
@@ -266,7 +270,7 @@ def main(dfUsage, freq, metadata_str, account):
     dfUsage_clean, df_ids = clean_data(dfUsage, 'tm', 'y', startdate, enddate)
     dfUsage_clean.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/dfUsage.csv')
     # models=['AE'] TODO select models interactively.....?
-    h = round(dfUsage_clean['ds'].nunique() * 0.15) # forecast horizon
+    h = round(dfUsage_clean['ds'].nunique() * 0.1) # forecast horizon
     ##################################
     # split data #########
     ##################################
@@ -277,18 +281,18 @@ def main(dfUsage, freq, metadata_str, account):
     ##################################
     # fit
     init_fit = time()
-    model, model_aliases = fit(dfUsage_clean, h, freq)
+    #model, model_aliases = fit(dfUsage_clean, h, freq)
     end_fit=time()
-    print(f'Fit Minutes: {(end_fit - init_fit) / 60}')
-    rs3.write_model_to_s3(model, fit_folder+freq, account+freq+'ETS_model.pkl')
+    #print(f'Fit Minutes: {(end_fit - init_fit) / 60}')
+    #rs3.write_model_to_s3(model, fit_folder+freq, account+freq+'ETS_model.pkl')
     # forecast
     # Read model from s3 if one exists for faster forecasting
     #model = rs3.read_model_from_s3(fit_folder+freq, 'Prompt_model.pkl')
 
     init_predict = time()
-    forecast = predict(model, dfUsage_clean, h)
+    #forecast = predict(model, dfUsage_clean, h)
     end_predict=time()
-    print(f'Predict Minutes: {(end_predict - init_predict) / 60}')
+   # print(f'Predict Minutes: {(end_predict - init_predict) / 60}')
 
     # forcast only
     init_foreonly = time()
@@ -296,9 +300,6 @@ def main(dfUsage, freq, metadata_str, account):
     end_foreonly = time()
     print(f'Forecast Only Minutes: {(end_foreonly - init_foreonly) / 60}')
 
-    # plot predictions
-    # StatsForecast plot routine
-    #SF_plot(dfUsage_clean, forecast_only)
     #plot_HW_forecast_vs_actuals(forecast, model_aliases)
 
     ##################################
@@ -306,11 +307,11 @@ def main(dfUsage, freq, metadata_str, account):
     ##################################
     if savetos3 in ['Y','yes','Yes', 'YES', 'y']:
         forecast_to_save = prep_forecast_for_s3(forecast, df_ids, model_aliases)
-        rs3.write_csv_to_s3(forecast_to_save, forecast_folder+freq+'/', account+'_'+freq+'_'+'ETS'+'_'+'forecast_data.gz')
+        rs3.write_csv_to_s3(forecast_to_save, forecast_folder+freq+'/', account+'_'+freq+'_'+'ETS'+'_'+'usage.gz')
         #metadatafile = prep_meta_data_for_s3()
-        rs3.write_meta_to_s3(metadata_str, forecast_folder+freq+'/',account+'_'+freq+'_'+'ETS'+'_'+'meta.gz')
+        rs3.write_meta_to_s3(metadata_str, forecast_folder+freq+'/',account+'_'+freq+'_'+'ETS'+'_'+'usage_meta.gz')
     else:
-        forecast.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/only_forecst.csv')
+        forecast_only.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/only_forecst.csv')
     return
 
 if __name__ == "__main__":
