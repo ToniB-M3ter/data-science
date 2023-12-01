@@ -13,17 +13,14 @@ Y_rec_df: Coherent reconciled predictions
 """
 import numpy as np
 import pandas as pd
-import sys, importlib
 from time import time
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from tabulate import tabulate
-import readWriteS3 as rs3
-import error_analysis as err
 import matplotlib.pyplot as plt
 
-#obtain hierarchical dataset
-from datasetsforecast.hierarchical import HierarchicalData, HierarchicalInfo
+import readWriteS3 as rs3
+import error_analysis as err
+import pre_process as pp
 
 # compute base forecast not coherent
 from statsforecast.core import StatsForecast
@@ -40,25 +37,6 @@ def get_keys():
     key = 'usage.gz'
     return key, metadatakey
 
-def select_date_range(data_freq):
-    startdate_input = input('Start date (YYYY-mm-dd HH:MM:SS format)? ')
-    if startdate_input == '':
-        # Select date range depending on frequency of data
-        if 'D' in data_freq:
-            startdate = datetime.today() - relativedelta(months=6)
-        elif 'h' in data_freq:
-            startdate = datetime.today() - relativedelta(months=1)
-    else:
-        startdate = startdate_input
-
-    enddate_input = input('Start date (YYYY-mm-dd HH:MM:SS format)? ')
-    if enddate_input == '':
-        enddate = datetime.today() - relativedelta(days=1)
-    else:
-        enddate = enddate_input
-
-    return startdate, enddate
-
 def clean_data(df: pd.DataFrame, startdate, enddate) -> pd.DataFrame:
     # filter dates
     datetime_mask = (df['tm'] > startdate) & (df['tm'] <= enddate)
@@ -69,6 +47,7 @@ def clean_data(df: pd.DataFrame, startdate, enddate) -> pd.DataFrame:
     tmp_df = df['account'].copy()
     tmp_df.replace(' ', '', regex=True, inplace=True)
     df['account'] = tmp_df
+
     # drop unneeded columns & add column for org and rename tm --> ds
     #df.drop(columns=['n_loads', 'n_events', 'account_id', 'meter', 'measurement'], inplace=True)
     df = df[['tm','account','y']]
@@ -203,7 +182,7 @@ def generate_plots(S_df, tags, Y_df, Y_hat_df):
 
 def main(data, freq, metadata_str, account):
     # Clean and Prepare Data
-    startdate, enddate = select_date_range(freq)
+    startdate, enddate = pp.select_date_range(freq)
     df = clean_data(data, startdate, enddate)
     df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/df.csv')
     Spc = get_spec()

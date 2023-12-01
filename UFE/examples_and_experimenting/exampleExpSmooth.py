@@ -19,7 +19,7 @@ def plot(data: pd.DataFrame):
     fig.show()
     return
 
-df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/data/yahoo_stock.csv')
+df = pd.read_csv('/UFE/data/yahoo_stock.csv')
 df['Date'] = pd.to_datetime(df['Date'])
 df.set_index('Date', drop=True, inplace=True)
 plot(df)

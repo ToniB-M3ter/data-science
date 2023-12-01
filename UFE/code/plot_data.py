@@ -147,10 +147,41 @@ def transpose_data(df, freq, col):
     #print(dfAll.head())
     return dfAll
 
+def plot_HW_forecast_vs_actuals(forecast, models: list):
+    #print(forecast.head())
+    print(str(forecast.isnull().any(axis=1).count()) + ' nulls in forecast' )
+    forecast['y'] = forecast['y'].replace(0, 1)
+    forecast.dropna(inplace=True)
+    forecast.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/engine_p.csv')
+
+    # set number of subplots = number of timeseries
+    min_subplots = 2
+    numb_ts = min_subplots if min_subplots > forecast['unique_id'].nunique() else forecast['unique_id'].nunique() # ensure the number of subplots is > 1
+
+    # Plot model by model
+    for model_ in models:
+        mape_ = mean_absolute_percentage_error(forecast['y'].values, forecast[model_].values)
+        print(f'{model_} MAPE: {mape_:.2%}')
+        fig, ax = plt.subplots(numb_ts, 1, figsize=(1280 / (288/numb_ts), (90*numb_ts) / (288/numb_ts)))
+        for ax_, device in enumerate(forecast['unique_id'].unique()):
+            forecast.loc[forecast['unique_id'] == device].plot(x='ds', y='y', ax=ax[ax_], label='y', title=device, linewidth=2)
+            forecast.loc[forecast['unique_id'] == device].plot(x='ds', y=model_, ax=ax[ax_], label=model_)
+            ax[ax_].set_xlabel('Date')
+            ax[ax_].set_ylabel('Sessions')
+            ax[ax_].fill_between(forecast.loc[forecast['unique_id'] == device, 'ds'].values,
+                                 forecast.loc[forecast['unique_id'] == device, f'{model_}-lo-95'],
+                                 forecast.loc[forecast['unique_id'] == device, f'{model_}-hi-95'],
+                                 alpha=0.2,
+                                 color='orange')
+            ax[ax_].set_title(f'{device} - Orange-ish band: 95% prediction interval')
+            ax[ax_].legend()
+        fig.tight_layout()
+        plt.show()
+        plt.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/eng_{}.jpg'.format(forecast['unique_id'][1]))
+    return
+
 
 def main():
-
-
     #rawdata = pd.read_csv('/UFE/data/dfUsage_28.csv')
     #data = clean_raw_data(rawdata)
     #heatmap(data)
@@ -172,8 +203,6 @@ def main():
     Y_hat_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_hat_df_AE_T.csv')
     Y_hat_df_T = transpose_data(Y_hat_df, '1D', 'Naive')
     Y_hat_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_hat_df_N_T.csv')
-
-
     return
 
 

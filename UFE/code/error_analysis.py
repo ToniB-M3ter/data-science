@@ -1,3 +1,4 @@
+from time import time
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -71,19 +72,21 @@ def cross_validate(Y_df, model, h, ts=None):
     """
 
     if ts:
-        print(ts)
         df = Y_df[Y_df['unique_id'] == ts]  # select time series
     else:
         df=Y_df
 
     StatsForecast.plot(Y_df, engine='plotly')
 
+    init = time()
     crossvalidation_df = model.cross_validation(
         df=df,
         h=h,
         step_size=h,
         n_windows=5
     )
+    end = time()
+    print(f'Cross Validate Minutes: {(end - init) / 60}')
 
     crossvalidation_df.rename(columns={'y': 'actual'}, inplace=True)  # rename actual values
 
@@ -96,8 +99,37 @@ def cross_validate(Y_df, model, h, ts=None):
         x = StatsForecast.plot(df, cv.loc[:, cv.columns != 'cutoff'])
         x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}'.format('xval.png'))
 
-    AE_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['AE'])
-    SN_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['SN'])
+    AE_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['AutoETS']) #TODO change the model filter to be dynamic
+    #SN_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['SN'])
     #AA_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['AA'])
-    N_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['N'])
-    print("AE, SN, AA, N RMSE using cross-validation: ", AE_rmse_res, SN_rmse_res, N_rmse_res)#, N_rmse_res)
+    #N_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['N'])
+    print("RMSE using cross-validation: ", AE_rmse_res)#, N_rmse_res)
+
+def evaluate_cross_validation(df, metric):
+    models = df.drop(columns=['unique_id', 'ds', 'cutoff', 'y']).columns.tolist()
+    evals = []
+    # Calculate loss for every unique_id and cutoff.
+    for cutoff in df['cutoff'].unique():
+        eval_ = evaluate(df[df['cutoff'] == cutoff], metrics=[metric], models=models)
+        evals.append(eval_)
+    evals = pd.concat(evals)
+    evals = evals.groupby('unique_id').mean(numeric_only=True) # Averages the error metrics for all cutoffs for every combination of model and unique_id
+    evals['best_model'] = evals.idxmin(axis=1)
+    return evals
+
+def get_best_model_forecast(forecasts_df, evaluation_df):
+    df = forecasts_df.set_index('ds', append=True).stack().to_frame().reset_index(level=2) # Wide to long
+    df.columns = ['model', 'best_model_forecast']
+    df = df.join(evaluation_df[['best_model']])
+    df = df.query('model.str.replace("-lo-90|-hi-90", "", regex=True) == best_model').copy()
+    df.loc[:, 'model'] = [model.replace(bm, 'best_model') for model, bm in zip(df['model'], df['best_model'])]
+    df = df.drop(columns='best_model').set_index('model', append=True).unstack()
+    df.columns = df.columns.droplevel()
+    df = df.reset_index(level=1)
+    return df
+
+
+def main():
+    crossvaldation_df = cross_validate()
+    evaluation_df = evaluate_cross_validation(crossvaldation_df.reset_index(), 'mse')
+    print(evaluation_df.head())

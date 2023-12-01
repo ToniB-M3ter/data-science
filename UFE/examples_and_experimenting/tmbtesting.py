@@ -5,7 +5,6 @@
 # plotting
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import seaborn as sns
 import plotly.express as px
 import sklearn
 import boto3
@@ -21,7 +20,6 @@ from dateutil.relativedelta import relativedelta
 # data wrangling
 import numpy as np
 import pandas as pd
-import pandas_datareader as pdr
 
 # predicting
 from statsmodels.tsa.api import acf, graphics, pacf
@@ -37,14 +35,6 @@ boto3.setup_default_session(profile_name='m3ter-ml-labs-prod') #ml-alpha-admin
 
 # Set service to s3
 s3 = boto3.resource("s3")
-
-plt.style.use('Solarize_Light2')
-# set up for matplotlib/seaborn plotting
-sns.set_style("darkgrid")
-pd.plotting.register_matplotlib_converters()
-# Default figure size
-sns.mpl.rc("figure", figsize=(16, 6))
-sns.mpl.rc("font", size=14)
 
 
 def plot_raw(data: pd.DataFrame, title: str):
@@ -167,11 +157,11 @@ def write_model_to_s3_2(model):
     key = 'tmbtest_model.pkl'
 
     # serialise and write to temp file
-    with open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/model.pkl', 'wb') as f:
+    with open('/UFE/output_files/model.pkl', 'wb') as f:
         pickle.dump(model, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     # open temp file
-    with open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/model.pkl', 'rb') as f:
+    with open('/UFE/output_files/model.pkl', 'rb') as f:
         # write
         response = boto3.client('s3').put_object(
             Body=f,
@@ -185,6 +175,42 @@ def read_model_from_s3(filepath, key):
     model = pickle.loads(s3.Bucket(DATABUCKET).Object(filepath + key).get()['Body'].read())
     print(type(model))
     return model
+
+def prep_data_for_s3():
+    model_aliases = ['AE']
+    dashboard_cols = [
+        'tm'  # timestamp
+        , 'meter'
+        , 'measurement'
+        , 'account_id'  # account m3ter uid
+        , 'account'
+        # , 'ts_id'  # ts unique id
+        , 'z'  # prediction
+        , 'z0'  # lower bound of 95% confidence interval
+        , 'z1'  # lower bound of 95% confidence interval
+        , '.model'  # model (e.g. model_)
+    ]
+
+    df_ids = pd.read_csv('/UFE/output_files/df_ids.csv')
+    df = pd.read_csv('/UFE/output_files/only_forecst.csv')
+
+    pat = "|".join(df_ids.account)
+    df.insert(0, 'account', df['unique_id'].str.extract("(" + pat + ')', expand=False))
+    df = df.merge(df_ids[['meter','measurement', 'account_id', 'account']], on='account')
+    df = df[['ds','meter','measurement', 'account_id', 'account', 'AE', 'AE-lo-95', 'AE-hi-95']]
+
+    dfs = []
+
+    for alias in model_aliases:
+        iterator_list = ['df' + alias, alias, alias + '-lo-95', alias + '-hi-95']
+        iterator_list[0] = df[['ds', 'meter', 'measurement', 'account_id', 'account', iterator_list[1], iterator_list[2], iterator_list[3]]]
+        iterator_list[0]['.model'] = alias
+        iterator_list[0].columns = dashboard_cols
+        dfs.append(iterator_list[0])
+
+    dfAll = pd.concat(dfs, ignore_index=True)
+
+    dfAll.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/all_forecasts_test.csv')
 
 def prep_meta_data_for_s3_new():
     BUCKET = 'm3ter-usage-forecasting-poc-m3ter-332767697772-us-east-1',
@@ -215,7 +241,7 @@ def prep_meta_data_for_s3():
     # TODO change meta as dictionary passed parameter to function
     meta = {'nm': 'typ', 'meter': 'dim', 'measurement': 'dim', 'account': 'dim', 'account_id': 'dim', '.model': 'dim', 'z': 'measure', 'tm': 'time', '_intrvl': '1h', 'z0': 'measure', 'z1': 'measure'}
     meta_list = list(meta.items())
-    with open ('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmbmeta.gz', 'w') as file: # TODO change to local temp folder
+    with open ('/UFE/output_files/tmbmeta.gz', 'w') as file: # TODO change to local temp folder
         for i in meta_list:
             file.write(','.join(map(str, i))+'\n')  # file type => _io.TextIOWrapper
     return file
@@ -248,10 +274,10 @@ def only_bytes(filepath, key):
     z0, measure
     z1, measure"""
 
-    with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/file.txt.gz', 'wb') as f:
+    with gzip.open('/UFE/output_files/file.txt.gz', 'wb') as f:
         f.write(meta_bytes)
 
-    with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/file.txt.gz', 'rb') as f:
+    with gzip.open('/UFE/output_files/file.txt.gz', 'rb') as f:
         #obj = s3.Object(DATABUCKET, filepath + key)
         #obj.put(Body=f)
         s3client.put_object(Bucket=DATABUCKET, Body=f, Key=filepath+key)
@@ -321,11 +347,13 @@ def main():
     ################################################
     # compressing, uncompressing, reading, writing to s3
     #read_model_from_s3('4_fit/1h/', 'Prompt_model.pkl')
+    prep_data_for_s3()
     #prep_meta_data_for_s3_new()
     #metadatafile = prep_meta_data_for_s3()
     #write_meta_to_s3(metadatafile, '4_fit/1h/', 'tmbmeta.gz')
     #only_strings('4_fit/1h/', 'tmbmeta.txt')
-    only_bytes('4_fit/1h/', 'tmbmeta.gz')
+    #only_bytes('4_fit/1h/', 'tmbmeta.gz')
+
     return
 
 

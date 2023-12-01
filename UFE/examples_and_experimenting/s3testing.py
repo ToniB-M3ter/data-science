@@ -27,7 +27,7 @@ def download_datapath():
     return filepath, metakey, key
 
 def upload_datapath():
-    filepath = '/Users/tmb/PycharmProjects/data-science/UFE/output_files/'  # allow selection of data
+    filepath = '/UFE/output_files/'  # allow selection of data
     metakey = 'usage_meta.gz'
     key = 'engine_p.csv'
     return filepath, metakey, key
@@ -39,7 +39,7 @@ def write_csv_to_bytes(df):
     #     sb.flush()
     #     buffer.seek(0)
 
-    df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/data/dfUsage.csv')
+    df = pd.read_csv('/UFE/data/dfUsage.csv')
     df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%d %H:%M:%S')
     df= df[0:100000]
     tmp_csv=df.to_csv()
