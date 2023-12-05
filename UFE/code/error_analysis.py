@@ -103,6 +103,7 @@ def cross_validate(Y_df, model, h, ts=None):
     #SN_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['SN'])
     #AA_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['AA'])
     #N_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['N'])
+    print(ts)
     print("RMSE using cross-validation: ", AE_rmse_res)#, N_rmse_res)
 
 def evaluate_cross_validation(df, metric):

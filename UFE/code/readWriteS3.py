@@ -34,9 +34,10 @@ def write_csv_to_s3(df, filepath, key):
     obj.put(Body=gz_buffer.getvalue())
     return
 
-def write_meta_to_s3(metadata_str, filepath, key):
+def write_meta_to_s3(metadata_str, freq, filepath, key):
     metadata_byte = metadata_str.encode()
-    meta_bytes = \
+
+    meta_bytes_daily = \
     b"""nm, typ
     meter, dim
     measurement, dim
@@ -45,12 +46,31 @@ def write_meta_to_s3(metadata_str, filepath, key):
     model, dim
     z, measure 
     tm, time 
-    _intrvl, 1h
+    _intrvl, 1D
     z0, measure
     z1, measure"""
 
-    with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmpmeta.txt.gz', 'wb') as f:
-        f.write(meta_bytes)
+    meta_bytes_hourly = \
+        b"""nm, typ
+        meter, dim
+        measurement, dim
+        account, dim
+        account_id, dim
+        model, dim
+        z, measure 
+        tm, time 
+        _intrvl, 1D
+        z0, measure
+        z1, measure"""
+
+    if freq == '1h':
+        with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmpmeta.txt.gz', 'wb') as f:
+            f.write(meta_bytes_hourly)
+    elif freq == '1D':
+        with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmpmeta.txt.gz', 'wb') as f:
+            f.write(meta_bytes_daily)
+    else:
+        print('No associated freq for metadata file')
 
     with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmpmeta.txt.gz', 'rb') as f:
         # obj = s3.Object(DATABUCKET, filepath + key)
@@ -133,14 +153,19 @@ def select_ts(df):
         accounts = ['AssembledHQ Prod',
                     'BurstSMS - Production',
                     'Burst SMS - Local Test',
+                    'ClickHouse QA',
                     'Sift Forecasting',
+                    'Sift Production',
                     'Onfido Dev',
                     'Onfido Prod',
                     'Patagona - Sandbox',
                     'Patagona - Production',
+                    'Prompt QA',
                     'Regal.io Prod',
                     'm3terBilllingOrg Production',
-                    'Tricentis Prod'] # subset of accounts that are known to work TODO add criteria to select ts which will work
+                    'TherapyIQ Production',
+                    'Tricentis Prod',
+                    'Unbabel Staging'] # subset of accounts that are known to work TODO add criteria to select ts which will work
         df = df.loc[(df['account'].isin(accounts))]
     else:
         try:

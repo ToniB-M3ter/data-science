@@ -42,6 +42,7 @@ def prep_for_ts(account, df: DataFrame, datetime_col: str, y: str, startdate, en
 
 def decompose(dfUsage: DataFrame)-> Series:
     result = seasonal_decompose(dfUsage['y'],model='additive')
+    print(type(result))
     result.plot()
     plt.show()
     return
@@ -161,12 +162,12 @@ def main(dfUsage):
     startdate, enddate = select_date_range()
     dfUsage_clean = prep_for_ts(dfUsage['account'].iloc[0], dfUsage, 'tm', 'y', startdate, enddate)
 
-    #decomposition = decompose(dfUsage_clean)
+    decomposition = decompose(dfUsage_clean)
     #expSmoothForecast = expSmooth(dfUsage_clean)
     forecast = ETS(dfUsage_clean)
 
-    prep_forecast_for_s3(forecast)
-    rw2s3.write_to_s3(forecast)
+    #prep_forecast_for_s3(forecast)
+    #rw2s3.write_to_s3(forecast)
 
     return
 
