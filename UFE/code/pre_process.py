@@ -1,15 +1,21 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+import os
 import pandas as pd
 import numpy as np
-from matplotlib import pyplot as plt
-from tabulate import tabulate
 
 from scipy.stats import kruskal
 from statsforecast import StatsForecast
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import adfuller
+
+import readWriteS3 as rs3
+USER = os.getenv('USER')
+
+import logging
+module_logger = logging.getLogger('ts_engine.pre-process')
+logger = logging.getLogger('ts_engine.pre-process')
 
 def split_data(df):
     #train = df.iloc[:int(0.75 * df['ds'].nunique())]  # TODO change 0.5 to horizon
@@ -21,21 +27,31 @@ def split_data(df):
     return train, valid, h
 
 def select_date_range(data_freq: str)-> datetime:
-    startdate_input = input('Start date (YYYY-mm-dd HH:MM:SS format)? ')
-    if startdate_input == '':
-        # Select date range depending on frequency of data
+    if USER is None: # if running on aws automatically set freq
         if 'D' in data_freq:
             startdate = datetime.today() - relativedelta(months=6)
         elif 'h' in data_freq:
             startdate = datetime.today() - relativedelta(months=1)
-    else:
-        startdate = startdate_input
 
-    enddate_input = input('End date (YYYY-mm-dd HH:MM:SS format)? ')
-    if enddate_input == '':
         enddate = datetime.today() - relativedelta(days=1)
     else:
-        enddate = enddate_input
+        # if we are running locally ask user for input
+        startdate_input = input('Start date (YYYY-mm-dd HH:MM:SS format)? ')
+        enddate_input = input('End date (YYYY-mm-dd HH:MM:SS format)? ')
+
+        if startdate_input == '':
+            # Select date range depending on frequency of data
+            if 'D' in data_freq:
+                startdate = datetime.today() - relativedelta(months=6)
+            elif 'h' in data_freq:
+                startdate = datetime.today() - relativedelta(months=1)
+        else:
+            startdate=startdate_input
+
+        if enddate_input == '':
+            enddate = datetime.today() - relativedelta(days=1)
+        else:
+            enddate=enddate_input
 
     return startdate, enddate
 
@@ -44,32 +60,34 @@ def clean_data(raw_df: pd.DataFrame, datetime_col: str, y: str, startdate, endda
     datetime_mask = (raw_df['tm'] > startdate) & (raw_df['tm'] <= enddate)
     df = raw_df.loc[datetime_mask]
 
-    print('Fit from '  + str(startdate) +' to '+ str(enddate))
+    logger.info('Fit from '  + str(startdate) +' to '+ str(enddate))
 
     # Remove whitespace from account name
     tmp_df = df['account'].copy()
     #tmp_df.replace(' ', '', regex=True, inplace=True)
-    df['account'] = tmp_df
+    df.loc[:, 'account'] = tmp_df
 
     # save unique combinations of account_id, meter, and measurement for formatting forecast file before saving
     df_ids = df[['account', 'account_id', 'meter', 'measurement']].drop_duplicates()
-    df_ids.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/df_ids.csv')
+
+    if USER is None:
+        rs3.write_csv_log_to_S3(df_ids, 'df_ids')
+    else:
+        df_ids.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/df_ids.csv')
 
     # format for fitting and forecasting - select subset of columns and add unique_id column
-    df['unique_id'] = df.apply(
+    df.loc[:,'unique_id'] = df.apply(
         lambda row: row.account + '_' + row.meter + '_' + row.measurement.split(' ')[0], axis=1)
 
     df = df[[datetime_col, y, 'unique_id']]
     df.columns = ['ds', 'y', 'unique_id']
 
-    #print(df.groupby(['unique_id']).size().reset_index(name='counts'))
-
     # Tell user number of time series
-    print(str(df['unique_id'].nunique()) + ' Unique Time Series')
+    logger.info(str(df['unique_id'].nunique()) + ' Unique Time Series')
 
     # plot for inspection
-    x = StatsForecast.plot(df)
-    x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}'.format('ts_eng_input_data'))
+    #x = StatsForecast.plot(df)
+    #x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}'.format('ts_eng_input_data'))
 
     return df, df_ids
 
@@ -78,13 +96,11 @@ def filter_data(clean_df: pd.DataFrame):
     # Score time series based on percentage of zeros
     dfZeros = clean_df.groupby('unique_id').agg(lambda x:x.eq(0).sum()).reset_index()
     dfZeros['pct_zeros'] = dfZeros['y']/z
-    print('DF ZEROS')
-    print(tabulate(dfZeros, headers="keys", tablefmt="psql"))
 
     # If less that 5% of values are non-zero, forecast with naive model
     df_naive_list = dfZeros[dfZeros['pct_zeros']> 0.94]['unique_id']
     df_naive = clean_df[clean_df['unique_id'].isin(df_naive_list)]
-    print(str(len(df_naive_list)) + ' time series will be forecast with naive model out of ' + str(clean_df['unique_id'].nunique()))
+    logger.info(str(len(df_naive_list)) + ' time series will be forecast with naive model out of ' + str(clean_df['unique_id'].nunique()))
 
     # of the remaining time series
     df_forecast_list = dfZeros[dfZeros['pct_zeros']<= 0.94]['unique_id']
@@ -95,15 +111,16 @@ def filter_data(clean_df: pd.DataFrame):
 def decompose(df: pd.DataFrame) -> pd.Series:
     dfdecompose = df.set_index('ds')
     unique_ids = df['unique_id'].unique()
-    for id in unique_ids[0:5]:
+    for id in unique_ids:
         dfdecompose = dfdecompose[dfdecompose['unique_id']==df['unique_id'].unique()[id]]
         result = seasonal_decompose(dfdecompose['y'],model='additive')
         #print(result.trend)
         #print(result.seasonal)
         #print(result.resid)
         #print(result.observed)
-        result.plot()
-        plt.show()
+
+        #result.plot()
+        #plt.show()
     return
 
 def test_stationarity_dickey_fuller(df: pd.DataFrame) -> pd.DataFrame:
@@ -111,7 +128,7 @@ def test_stationarity_dickey_fuller(df: pd.DataFrame) -> pd.DataFrame:
     stationarity_list = []
     stationarity_sccore = []
     unique_ids_list = []
-    for id in unique_ids[0:5]:
+    for id in unique_ids:
         stationarity = False
         result = adfuller(df[df['unique_id']==id]['y'],
                           autolag='AIC')

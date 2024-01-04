@@ -1,11 +1,20 @@
 from time import time
+import os
+#os.environ['MPLCONFIGDIR']= tempfile.gettempdir()
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+
 from statsforecast import StatsForecast # required to instantiate StastForecast object and use cross-validation method
 from datasetsforecast.losses import rmse as df_rmse
 from utilsforecast.evaluation import evaluate
 
+import readWriteS3 as rs3
+
+import logging
+module_logger = logging.getLogger('ts_engine.error_analysis')
+logger = logging.getLogger('ts_engine.error_analysis')
+
+USER = os.getenv('USER')
 
 def mse_calc(y, y_hat):
     return np.mean((y-y_hat)**2)
@@ -49,7 +58,7 @@ def r_sqed_adjed_calc():
         """
     pass
 
-def cross_validate(Y_df, model, h, ts=None):
+def  cross_validate(Y_df, model, h):
     """
     Once the StatsForecastobject has been instantiated, we can use the cross_validation method, which takes the following arguments:
     df: training data frame with StatsForecast format
@@ -59,7 +68,7 @@ def cross_validate(Y_df, model, h, ts=None):
 
 
     The crossvaldation_df object is a new data frame that includes the following columns:
-    unique_id: index. If you dont like working with index just run crossvalidation_df.resetindex()
+    unique_id: index. If you don't like working with index just run crossvalidation_df.resetindex()
     ds: datestamp or temporal index
     cutoff: the last datestamp or temporal index for the n_windows.
     y: true value
@@ -71,40 +80,44 @@ def cross_validate(Y_df, model, h, ts=None):
     The forecasts, in this case, AutoETS.
     """
 
-    if ts:
-        df = Y_df[Y_df['unique_id'] == ts]  # select time series
+    unique_ids = Y_df['unique_id'].unique()
+    cvs = []
+    cv_scores = []
+
+    for i in unique_ids:
+        df = Y_df[Y_df['unique_id'] == i]  # select time series
+        # StatsForecast.plot(Y_df, engine='plotly')
+        crossvalidation_df = model.cross_validation( # model defines what the fit and fitted values are
+            df=df,
+            h=h,
+            step_size=h,
+            n_windows=5 # TODO parameterise
+        )
+
+        crossvalidation_df.rename(columns={'y': 'actual'}, inplace=True)  # rename actual values
+        cvs.append(crossvalidation_df.copy())
+
+        cutoff = crossvalidation_df['cutoff'].unique()
+        for k in range(len(cutoff)):
+            cv = crossvalidation_df[crossvalidation_df['cutoff'] == cutoff[k]]
+            #x = StatsForecast.plot(df, cv.loc[:, cv.columns != 'cutoff'])
+            #x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/xval/xval_{}_{}.png'.format(i,str(model)))
+
+        rmse_score = df_rmse(crossvalidation_df['actual'], crossvalidation_df['AutoETS'])
+        cv_scores.append(rmse_score)
+
+    # save scores and create df from ids and scores
+    cvs_scores_df = pd.DataFrame(
+        {'unique_id': unique_ids, 'cvs rmse scores': cv_scores})
+
+    # save all cvs'
+    cvs_all = pd.concat(cvs, ignore_index=True)
+    if USER is None:
+        rs3.write_csv_log_to_S3(cvs_all, 'cvs_all')
     else:
-        df=Y_df
-
-    StatsForecast.plot(Y_df, engine='plotly')
-
-    init = time()
-    crossvalidation_df = model.cross_validation(
-        df=df,
-        h=h,
-        step_size=h,
-        n_windows=5
-    )
-    end = time()
-    print(f'Cross Validate Minutes: {(end - init) / 60}')
-
-    crossvalidation_df.rename(columns={'y': 'actual'}, inplace=True)  # rename actual values
-
-    cutoff = crossvalidation_df['cutoff'].unique()
-
-    crossvalidation_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/crossvalidation_df.csv')
-
-    for k in range(len(cutoff)):
-        cv = crossvalidation_df[crossvalidation_df['cutoff'] == cutoff[k]]
-        x = StatsForecast.plot(df, cv.loc[:, cv.columns != 'cutoff'])
-        x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}'.format('xval.png'))
-
-    AE_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['AutoETS']) #TODO change the model filter to be dynamic
-    #SN_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['SN'])
-    #AA_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['AA'])
-    #N_rmse_res = df_rmse(crossvalidation_df['actual'], crossvalidation_df['N'])
-    print(ts)
-    print("RMSE using cross-validation: ", AE_rmse_res)#, N_rmse_res)
+        cvs_all.to_csv(
+            '/Users/tmb/PycharmProjects/data-science/UFE/output_files/crossvalidation_{}.csv'.format(id))
+    return cvs_scores_df
 
 def evaluate_cross_validation(df, metric):
     models = df.drop(columns=['unique_id', 'ds', 'cutoff', 'y']).columns.tolist()
@@ -129,8 +142,7 @@ def get_best_model_forecast(forecasts_df, evaluation_df):
     df = df.reset_index(level=1)
     return df
 
-
 def main():
     crossvaldation_df = cross_validate()
     evaluation_df = evaluate_cross_validation(crossvaldation_df.reset_index(), 'mse')
-    print(evaluation_df.head())
+    logger.info(evaluation_df.head())

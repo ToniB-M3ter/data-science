@@ -1,19 +1,15 @@
 
-import sys, importlib
+import os, sys, importlib
+from os import path
 from time import time
 import pandas as pd
-import plotly.express as px
-import matplotlib.pyplot as plt
 from tabulate import tabulate
-import warnings
 
 import readWriteS3 as rs3
 import error_analysis as err
 import pre_process as pp
 
 from statsforecast import StatsForecast
-#from sklearn.metrics import mean_absolute_percentage_error
-
 from statsforecast.models import (
     SeasonalNaive, # model using the previous season's data as the forecast
     Naive, # Simple naive model using the last observed value as the forecast
@@ -23,9 +19,33 @@ from statsforecast.models import (
     HoltWinters #HoltWinters ETS model
     )
 
+import logging
+import warnings
+from logging.config import fileConfig
 
-# cache for dataload
+logging.captureWarnings(True)
+log_file_path = path.join(path.dirname(path.abspath(__file__)), 'log.config')
+logging.config.fileConfig(log_file_path)
+logger = logging.getLogger(__name__)
+
+# parameters
 dataloadcache = None
+
+tidy_folder = '2_tidy/'
+fit_folder = '4_fit/'
+forecast_folder = '5_forecast/'
+
+os.environ['FIT_FORECAST'] = 'BOTH'
+os.environ['MODEL'] = 'AutoETS'
+
+# FIT = fit and save fit; then forecast
+# FORECAST = only forecast
+# BOTH = fit and forecast in one step
+global FIT_FORECAST
+FIT_FORECAST=os.getenv('FIT_FORECAST')
+MODEL=os.getenv('MODEL')
+FREQ=os.getenv('FREQ')
+USER=os.getenv('USER')
 
 def get_keys():
     metadatakey = 'usage_meta.gz'
@@ -92,7 +112,6 @@ def plot_forecasts(model, df, forecast, model_aliases):
         df,
         forecast,
         models=model_aliases,
-        #unique_ids=["BurstSMS - Local Test_billing_bill", "Patagona - Production_billing_bill", "Sift Forecasting_billing_bill"],
         level=[95],
         engine='plotly')
 
@@ -101,9 +120,9 @@ def plot_forecasts(model, df, forecast, model_aliases):
     return
 
 def plot(data: pd.DataFrame, account: str, meter: str):
-    fig = px.line(data, x='tm', y='y', title='Account: {} & Meter: {}'.format(account, meter))
-    fig.show()
-    return
+    #fig = px.line(data, x='tm', y='y', title='Account: {} & Meter: {}'.format(account, meter))
+    #fig.show()
+    pass
 
 def prep_forecast_for_s3(df: pd.DataFrame, df_ids, model_aliases):
     df.reset_index(inplace=True)
@@ -148,17 +167,14 @@ def prep_meta_data_for_s3():
     # TODO change meta as dictionary passed parameter to function
     meta = {'nm': 'typ', 'meter': 'dim', 'measurement': 'dim', 'account': 'dim', 'account_id': 'dim', '.model': 'dim', 'z': 'measure', 'tm': 'time', '_intrvl': '1h', 'z0': 'measure', 'z1': 'measure'}
     meta_list = list(meta.items())
-    with open ('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmbmeta.txt', 'w') as file: # TODO change to local temp folder
+    with open ('/tmp/tmbmeta.txt', 'w') as file:
         for i in meta_list:
             file.write(','.join(map(str, i))+'\n')  # file type => _io.TextIOWrapper
     return file
 
 def main(dfUsage, freq, metadata_str, account):
-    # define folders
-    fit_folder = '4_fit/'
-    forecast_folder = '5_forecast/'
     ##################################
-    # plot raw time series  ##############
+    # plot raw time series  ##########
     ##################################
     #plot(dfUsage, dfUsage['account'].iloc[0], dfUsage['meter'].iloc[0])
 
@@ -167,7 +183,11 @@ def main(dfUsage, freq, metadata_str, account):
     ##################################
     startdate, enddate = pp.select_date_range(freq)
     dfUsage_clean, df_ids = pp.clean_data(dfUsage, 'tm', 'y', startdate, enddate)
-    dfUsage_clean.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/dfUsage.csv')
+
+    if USER is None:
+        rs3.write_csv_log_to_S3(dfUsage_clean, 'dfUsage_clean')
+    else:
+        dfUsage_clean.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/dfUsage.csv')
 
     # get parameters and models
     season = get_season(freq)
@@ -178,80 +198,93 @@ def main(dfUsage, freq, metadata_str, account):
     stationarity_df=pp.test_stationarity_dickey_fuller(df_to_forecast)
     seasonality_df=pp.seasonality_test(df_to_forecast, season)
     tests = pd.merge(stationarity_df, seasonality_df, on='unique_id')
-    print('Stationarity and Seasonality Test Results')
-    print(tabulate(tests, headers="keys", tablefmt="psql"))
+    logger.info('Stationarity/Seasonality Results')
+    logger.info(tabulate(tests.head(), headers="keys", tablefmt="psql"))
     #pp.decompose(dfUsage_clean)
 
     ##################################
     # fit, predict, forecast #########
     ##################################
-    # fit
-    init_fit = time()
-    #model = fit(dfUsage_clean, h, season, freq, ts_models)
-    end_fit=time()
-    #print(f'Fit Minutes: {(end_fit - init_fit) / 60}')
-    #rs3.write_model_to_s3(model, fit_folder+freq, account+freq+'ETS_model.pkl')
-
-    # forecast
-    # Read model from s3 if one exists for faster forecasting
-    #model = rs3.read_model_from_s3(fit_folder+freq, 'Prompt_model.pkl')
-    init_predict = time()
-    #forecast = predict(model, dfUsage_clean, h)
-    end_predict=time()
-   # print(f'Predict Minutes: {(end_predict - init_predict) / 60}')
-
     # forecast naive time series
     naive_model_aliases = ['Naive']
     ts_naive_model = select_models(freq, naive_model_aliases)
-    forecast_only_naive, naive_model = only_forecast(df_naive, h, season, freq, ts_naive_model)
-    plot_forecasts(naive_model, dfUsage_clean, forecast_only_naive, naive_model_aliases)
+    if len(df_naive) > 0:
+        forecast_only_naive, naive_model = only_forecast(df_naive, h, season, freq, ts_naive_model)
+        # plot_forecasts(naive_model, dfUsage_clean, forecast_only_naive, naive_model_aliases)
 
-    # forcast only
+    # set up model(s) for rest of data
     model_aliases = ['AutoETS']
     ts_models = select_models(freq, model_aliases)
-    init_foreonly = time()
-    forecast_only, model = only_forecast(df_to_forecast, h, season, freq, ts_models)
-    end_foreonly = time()
-    print(f'Forecast Only Minutes: {(end_foreonly - init_foreonly) / 60}')
 
-    # plot and analyse
-    plot_forecasts(model, dfUsage_clean, forecast_only, model_aliases)
-    ts = dfUsage_clean['unique_id'].values[0]
-    res_rmse = err.cross_validate(dfUsage_clean, model, h, ts)
+    if FIT_FORECAST == 'FIT':
+        init_fit = time()
+        model = fit(dfUsage_clean, h, season, freq, ts_models)
+        end_fit=time()
+        logger.info(f'Fit Minutes: {(end_fit - init_fit) / 60}')
+        rs3.write_model_to_s3(model, fit_folder+freq, account + freq + model_aliases[0] + '.pkl')
+        forecast = predict(model, dfUsage_clean, h)
+    elif FIT_FORECAST == 'FORECAST':
+        # Read model from s3
+        model = rs3.read_model_from_s3(fit_folder+freq, MODEL+'.pkl')
+        init_predict = time()
+        forecast = predict(model, dfUsage_clean, h)
+        end_predict = time()
+        logger.info(f'Forecast Minutes: {(end_predict - init_predict) / 60}')
+    elif FIT_FORECAST == 'BOTH':
+        if len(df_to_forecast)>0:
+            init_foreonly = time()
+            forecast_only, model = only_forecast(df_to_forecast, h, season, freq, ts_models)
+            end_foreonly = time()
+            logger.info(f'Forecast Only Minutes:  + {(end_foreonly - init_foreonly) / 60}')
+
+        # plot and analyse
+        #plot_forecasts(model, dfUsage_clean, forecast_only, model_aliases)
+        cv_rmse_df = err.cross_validate(dfUsage_clean, model, h)
+        if USER is None:
+            rs3.write_csv_log_to_S3(cv_rmse_df, 'cv_rmse_df')
+        else:
+            dfUsage_clean.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/dfUsage.csv')
 
     ##################################
     # save to s3 if directed #########
     ##################################
-    if savetos3 in ['Y','yes','Yes', 'YES', 'y']:
+    if USER is None:
         # metadatafile = prep_meta_data_for_s3() TODO remove or prep fields for saving
 
         # Naive forecasts
-        naive_forecast_to_save = prep_forecast_for_s3(forecast_only_naive, df_ids, naive_model_aliases)
-        rs3.write_csv_to_s3(naive_forecast_to_save, forecast_folder + freq + '/', account + '_' + freq + '_' + naive_model_aliases[0] + '_' + 'usage.gz') # save file for naive forecasts
-        rs3.write_meta_to_s3(metadata_str, freq, forecast_folder + freq + '/',account + '_' + freq + '_' + naive_model_aliases[0] + '_' + 'usage_meta.gz')
+        if len(df_naive)>0:
+            naive_forecast_to_save = prep_forecast_for_s3(forecast_only_naive, df_ids, naive_model_aliases)
+            rs3.write_gz_csv_to_s3(naive_forecast_to_save, forecast_folder + freq + '/', account + '_' + freq + '_' + naive_model_aliases[0] + '_' + 'usage.gz') # save file for naive forecasts
+            rs3.write_meta_to_s3(metadata_str, freq, forecast_folder + freq + '/',account + '_' + freq + '_' + naive_model_aliases[0] + '_' + 'usage_meta.gz')
 
         # other forecasts
-        forecast_to_save = prep_forecast_for_s3(forecast_only, df_ids, model_aliases)
-        rs3.write_csv_to_s3(forecast_to_save, forecast_folder + freq + '/', account + '_' + freq + '_' + model_aliases[0] + '_' + 'usage.gz')
-        rs3.write_meta_to_s3(metadata_str, freq, forecast_folder + freq+'/',account + '_' + freq + '_' + model_aliases[0] + '_' + 'usage_meta.gz')
+        if len(df_to_forecast)>0:
+            forecast_to_save = prep_forecast_for_s3(forecast_only, df_ids, model_aliases)
+            rs3.write_gz_csv_to_s3(forecast_to_save, forecast_folder + freq + '/', account + '_' + freq + '_' + model_aliases[0] + '_' + 'usage.gz')
+            rs3.write_meta_to_s3(metadata_str, freq, forecast_folder + freq+'/',account + '_' + freq + '_' + model_aliases[0] + '_' + 'usage_meta.gz')
     else:
-        forecast_only_naive.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/forecast{}.csv'.format(naive_model_aliases[0]))
-        forecast_only.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/forecast{}.csv'.format(model_aliases[0]))
+        if len(df_naive)>0:
+            forecast_only_naive.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/forecast{}.csv'.format(naive_model_aliases[0]))
+        if len(df_to_forecast)>0:
+            forecast_only.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/forecast{}.csv'.format(model_aliases[0]))
+    return
+
+def lambda_handler(event, context):
+    freq = os.getenv(FREQ)
+    key, metadatakey = get_keys()
+    dataloadcache, metadata_str = rs3.get_data(tidy_folder + freq + '/', key, metadatakey)
+    data, account = rs3.select_ts(dataloadcache)
+    main(data, freq, metadata_str, account)
     return
 
 if __name__ == "__main__":
-    data_loc = input("Data location (local or s3)? ")
-    savetos3 = input("Save to s3? ")
     freq = input("Hourly (1h) or Daily (1D) frequency: ")
     dataloadcache= pd.DataFrame()
 
     while True:
         if dataloadcache.empty:
-            if data_loc == 's3':
-                key, metadatakey = get_keys()
-                dataloadcache, metadata_str = rs3.get_data('2_tidy/'+freq+'/', key, metadatakey)
-            elif data_loc == 'local':
-                dataloadcache = rs3.get_data_local()
+            key, metadatakey = get_keys()
+            dataloadcache, metadata_str = rs3.get_data(tidy_folder + freq + '/', key, metadatakey)
         data, account = rs3.select_ts(dataloadcache)
         main(data, freq, metadata_str, account)
         print("Press enter to re-run the script, CTRL-C to exit")

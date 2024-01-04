@@ -4,17 +4,24 @@ import pickle
 import boto3
 from io import StringIO, BytesIO, TextIOWrapper
 from botocore.exceptions import ClientError
-from tabulate import tabulate
+
+# Remove line and let boto3 find the role and set up default session when releasing
+boto3.setup_default_session(profile_name='ml-labs-prod') #ml-alpha-admin
 
 os.environ['DATABUCKET']  = 'm3ter-usage-forecasting-poc-m3ter-332767697772-us-east-1'
 os.environ['WRITE_BUCKET'] = 'tmbbucket'
 global DATABUCKET
 DATABUCKET = os.getenv('DATABUCKET')
 WRITE_BUCKET = os.getenv('WRITE_BUCKET')
-boto3.setup_default_session(profile_name='m3ter-ml-labs-prod') #ml-alpha-admin
-# Remove line and let boto3 find the role and set up default session when releasing
+USER = os.getenv('USER')
+METER = os.getenv('METER')
+
+import logging
+module_logger = logging.getLogger('ts_engine.readWrite')
+logger = logging.getLogger('ts_engine.readWrite')
 
 # Set service to s3
+s3clt = boto3.client('s3')
 s3 = boto3.resource("s3")
 s3client = boto3.client("s3")
 
@@ -24,7 +31,7 @@ def datapath(freq):
     key = 'usage.gz'
     return filepath, metakey, key
 
-def write_csv_to_s3(df, filepath, key):
+def write_gz_csv_to_s3(df, filepath, key):
     gz_buffer = BytesIO()
 
     with gzip.GzipFile(mode='w', fileobj=gz_buffer) as gz_file:
@@ -32,6 +39,18 @@ def write_csv_to_s3(df, filepath, key):
 
     obj = s3.Object(DATABUCKET, filepath+key)
     obj.put(Body=gz_buffer.getvalue())
+    return
+
+def write_csv_log_to_S3(df, data_name):
+    # set up for logging missing accounts
+    OBJECT_NAME ='logs/{}.txt'.format(data_name)
+    LAMBDA_LOCAL_TMP_FILE = '/tmp/{}.txt'.format(data_name)
+
+    with open(LAMBDA_LOCAL_TMP_FILE, 'w') as file:
+        writer = csv.writer(file)
+        writer.writerow(df)
+
+    s3clt.upload_file(LAMBDA_LOCAL_TMP_FILE, DATABUCKET, OBJECT_NAME)
     return
 
 def write_meta_to_s3(metadata_str, freq, filepath, key):
@@ -64,15 +83,15 @@ def write_meta_to_s3(metadata_str, freq, filepath, key):
         z1, measure"""
 
     if freq == '1h':
-        with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmpmeta.txt.gz', 'wb') as f:
+        with gzip.open('/tmp/tmpmeta.txt.gz', 'wb') as f:
             f.write(meta_bytes_hourly)
     elif freq == '1D':
-        with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmpmeta.txt.gz', 'wb') as f:
+        with gzip.open('/tmp/tmpmeta.txt.gz', 'wb') as f:
             f.write(meta_bytes_daily)
     else:
         print('No associated freq for metadata file')
 
-    with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmpmeta.txt.gz', 'rb') as f:
+    with gzip.open('/tmp/tmpmeta.txt.gz', 'rb') as f:
         # obj = s3.Object(DATABUCKET, filepath + key)
         # obj.put(Body=f)
         s3client.put_object(Bucket=DATABUCKET, Body=f, Key=filepath + key)
@@ -98,6 +117,8 @@ def read_model_from_local():
     return model
 
 def read_from_S3(filepath, key):
+    logger = logging.getLogger('ts_engine.readWrite.read_from_s3')
+    logger.info('get file %s from %s' % (key, filepath))
     obj = s3.Object(DATABUCKET, filepath + key)
     with gzip.GzipFile(fileobj=obj.get()["Body"]) as gzipfile:
         data = gzipfile.read()
@@ -132,20 +153,16 @@ def get_data_local():
     df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%d %H:%M:%S')
     return df
 
-def analyse_data(df):
-    #df.astype(bool).sum(axis=0)  # count non-Nan's
-    counts = df.notnull().groupby(df['account']).count()
-    print('Account Event Counts')
-    print(tabulate(counts, headers="keys", tablefmt="psql"))
-    return
-
 def select_ts(df):
-    #analyse_data(df)
+    # If interactive, select Account(s) otherwise select all accounts
+    logger.info(str(df['account'].nunique()) + ' Unique accounts')
 
-    # Select Account(s)
-    print(str(df['account'].nunique()) + ' Unique accounts')
     all = ['all','All','ALL']
-    account = input('Enter an account, all or small: ' )
+    if USER is None:
+        account = 'all'
+    else:
+        account = input('Enter an account, all or small: ' )
+
     if account in all:
         accounts = df['account'].unique()
         df = df.loc[(df['account'].isin(accounts))]
@@ -171,20 +188,24 @@ def select_ts(df):
         try:
             df = df.loc[(df['account'] == account)]
         except:
-            print("That account doesn't exist")
+            logger.error("Account %s doesn't exist" % (account))
 
     # Select meter
-    print(df['meter'].unique())
-    meter = input('Enter a meter? ')
+    if USER is None:
+        meter = METER
+    else:
+        print(df['meter'].unique())
+        meter = input('Enter a meter? ')
+
     if meter in all:
         pass
     else:
         try:
             df = df.loc[df['meter'] == meter]
         except:
-            print("That meter doesn't exist")
+            logger.error("Meter %s doesn't exist" % (meter))
 
-    print(str(len(df)) + ' records from ' + str(df['tm'].min()) + ' to ' + str(df['tm'].max()) )
+    logger.info(str(len(df)) + ' records from ' + str(df['tm'].min()) + ' to ' + str(df['tm'].max()) )
     return df, account.replace( ' ', '')
 
 def main():
