@@ -14,7 +14,6 @@ global DATABUCKET
 DATABUCKET = os.getenv('DATABUCKET')
 WRITE_BUCKET = os.getenv('WRITE_BUCKET')
 USER = os.getenv('USER')
-METER = os.getenv('METER')
 
 import logging
 module_logger = logging.getLogger('ts_engine.readWrite')
@@ -213,7 +212,6 @@ def main():
     freq = freq_input + '/'
     filepath, metadatakey, key = datapath(freq) # If calling directly get data location
     data = get_data(filepath, key, metadatakey)
-    data = select_ts(data)
     return data
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ from statsmodels.tsa.stattools import adfuller
 
 import readWriteS3 as rs3
 USER = os.getenv('USER')
+METER = os.getenv('METER')
 
 import logging
 module_logger = logging.getLogger('ts_engine.pre-process')
@@ -54,6 +55,61 @@ def select_date_range(data_freq: str)-> datetime:
             enddate=enddate_input
 
     return startdate, enddate
+
+def select_ts(df):
+    # If interactive, select Account(s) otherwise select all accounts
+    logger.info(str(df['account'].nunique()) + ' Unique accounts')
+
+    all = ['all','All','ALL']
+    if USER is None:
+        account = 'all'
+    else:
+        account = input('Enter an account, all or small: ' )
+
+    if account in all:
+        accounts = df['account'].unique()
+        df = df.loc[(df['account'].isin(accounts))]
+    elif account == 'small':
+        accounts = ['AssembledHQ Prod',
+                    'BurstSMS - Production',
+                    'Burst SMS - Local Test',
+                    'ClickHouse QA',
+                    'Sift Forecasting',
+                    'Sift Production',
+                    'Onfido Dev',
+                    'Onfido Prod',
+                    'Patagona - Sandbox',
+                    'Patagona - Production',
+                    'Prompt QA',
+                    'Regal.io Prod',
+                    'm3terBilllingOrg Production',
+                    'TherapyIQ Production',
+                    'Tricentis Prod',
+                    'Unbabel Staging'] # subset of accounts that are known to work
+        df = df.loc[(df['account'].isin(accounts))]
+    else:
+        try:
+            df = df.loc[(df['account'] == account)]
+        except:
+            logger.error("Account %s doesn't exist" % (account))
+
+    # Select meter
+    if USER is None:
+        meter = METER
+    else:
+        print(df['meter'].unique())
+        meter = input('Enter a meter? ')
+
+    if meter in all:
+        pass
+    else:
+        try:
+            df = df.loc[df['meter'] == meter]
+        except:
+            logger.error("Meter %s doesn't exist" % (meter))
+
+    logger.info(str(len(df)) + ' records from ' + str(df['tm'].min()) + ' to ' + str(df['tm'].max()) )
+    return df, account.replace( ' ', '')
 
 def clean_data(raw_df: pd.DataFrame, datetime_col: str, y: str, startdate, enddate) -> pd.DataFrame:
     # filter dates
