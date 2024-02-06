@@ -17,6 +17,8 @@ import importlib
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from utilsforecast.plotting import plot_series
+from hierarchicalforecast.utils import HierarchicalPlot
 from dash import Dash, dcc, html, Input, Output
 import plotly.express as px
 
@@ -180,29 +182,45 @@ def plot_HW_forecast_vs_actuals(forecast, models: list):
         plt.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/eng_{}.jpg'.format(forecast['unique_id'][1]))
     return
 
+def plot_hier(tags, S_df, Y_df, Y_rec_df):
+    hplot = HierarchicalPlot(S=S_df, tags=tags)
+    fig = plot_series(Y_df, plot_random=False, max_insample_length=50, engine='matplotlib')
+    fig.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/hierarchical/onfido/index.png', bbox_inches='tight')
+    plt.show()
+
+
 
 def main():
     #rawdata = pd.read_csv('/UFE/data/dfUsage_28.csv')
     #data = clean_raw_data(rawdata)
-    #heatmap(data)
 
-    Y_train = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_train.csv', index_col='Unnamed: 0')
-    Y_test = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_test.csv', index_col='Unnamed: 0')
-    Y_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_df.csv') # observed data including aggregations
-    Y_hat_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_hat_df.csv')  # Base Forecasts NB predictions will not be coherent at this point
-    Y_fitted_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_fitted_df.csv') # Fitted data from tmin - tmax
-    Y_rec_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_rec_df.csv') # hierarchial reconciled data
+    path = '/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/'
+    files = [#'Y_train',
+             #'Y_test',
+             'Y_df',   # observed data including aggregations
+             'Y_fitted_df',  # Fitted data from tmin - tmax
+             'Y_hat_df',   # Base Forecasts NB predictions will not be coherent at this point
+             #'Y_rec_df' # hierarchial reconciled data
+            'onfido_Y_rec_df_hier'
+             ]
 
-    Y_train_T = transpose_data(Y_train, '1D', 'y')
-    Y_train_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_train_T.csv')
+    S_df = pd.read_csv(path + 'S_df' + '.csv')
+    Y_df = pd.read_csv(path + 'Y_df' + '.csv',  index_col='Unnamed: 0', parse_dates=['ds'])
+    Y_rec_df  = pd.read_csv(path + 'Y_rec_df' + '.csv', parse_dates=['ds'])   #index_col='Unnamed: 0',
 
-    Y_df_T = transpose_data(Y_df, '1D', 'y')
-    Y_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_df_T.csv')
 
-    Y_hat_df_T = transpose_data(Y_hat_df, '1D', 'AutoETS')
-    Y_hat_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_hat_df_AE_T.csv')
-    Y_hat_df_T = transpose_data(Y_hat_df, '1D', 'Naive')
-    Y_hat_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_hat_df_N_T.csv')
+    #Y_train_T = transpose_data(Y_train, '1D', 'y')
+    #Y_train_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_train_T.csv')
+
+    #Y_df_T = transpose_data(Y_df, '1D', 'y')
+    #Y_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_df_T.csv')
+
+    # Y_hat_df_T = transpose_data(Y_hat_df, '1D', 'AutoETS')
+    # Y_hat_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_hat_df_AE_T.csv')
+    # Y_hat_df_T = transpose_data(Y_hat_df, '1D', 'Naive')
+    # Y_hat_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_hat_df_N_T.csv')
+
+    plot_hier(Y_df, Y_rec_df)
     return
 
 

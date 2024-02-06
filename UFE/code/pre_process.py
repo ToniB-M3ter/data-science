@@ -4,6 +4,7 @@ from dateutil.relativedelta import relativedelta
 import os
 import pandas as pd
 import numpy as np
+import sklearn
 
 from scipy.stats import kruskal
 from statsforecast import StatsForecast
@@ -58,7 +59,7 @@ def select_date_range(data_freq: str)-> datetime:
 
 def select_ts(df):
     # If interactive, select Account(s) otherwise select all accounts
-    logger.info(str(df['account'].nunique()) + ' Unique accounts')
+    logger.info(str(df['account_cd'].nunique()) + ' Unique accounts')
 
     all = ['all','All','ALL']
     if USER is None:
@@ -67,8 +68,8 @@ def select_ts(df):
         account = input('Enter an account, all or small: ' )
 
     if account in all:
-        accounts = df['account'].unique()
-        df = df.loc[(df['account'].isin(accounts))]
+        accounts = df['account_cd'].unique()
+        df = df.loc[(df['account_cd'].isin(accounts))]
     elif account == 'small':
         accounts = ['AssembledHQ Prod',
                     'BurstSMS - Production',
@@ -86,10 +87,10 @@ def select_ts(df):
                     'TherapyIQ Production',
                     'Tricentis Prod',
                     'Unbabel Staging'] # subset of accounts that are known to work
-        df = df.loc[(df['account'].isin(accounts))]
+        df = df.loc[(df['account_cd'].isin(accounts))]
     else:
         try:
-            df = df.loc[(df['account'] == account)]
+            df = df.loc[(df['account_cd'] == account)]
         except:
             logger.error("Account %s doesn't exist" % (account))
 
@@ -101,7 +102,8 @@ def select_ts(df):
         meter = input('Enter a meter? ')
 
     if meter in all:
-        pass
+        meters = df['meter'].unique()
+        df = df.loc[(df['meter'].isin(meters))]
     else:
         try:
             df = df.loc[df['meter'] == meter]
@@ -116,15 +118,15 @@ def clean_data(raw_df: pd.DataFrame, datetime_col: str, y: str, startdate, endda
     datetime_mask = (raw_df['tm'] > startdate) & (raw_df['tm'] <= enddate)
     df = raw_df.loc[datetime_mask]
 
-    logger.info('Fit from '  + str(startdate) +' to '+ str(enddate))
+    logger.info('clean_data from '  + str(startdate) +' to '+ str(enddate))
 
     # Remove whitespace from account name
-    tmp_df = df['account'].copy()
+    #tmp_df = df['account_cd'].copy()
     #tmp_df.replace(' ', '', regex=True, inplace=True)
-    df.loc[:, 'account'] = tmp_df
+    #df.loc[:, 'account_cd'] = tmp_df
 
     # save unique combinations of account_id, meter, and measurement for formatting forecast file before saving
-    df_ids = df[['account', 'account_id', 'meter', 'measurement']].drop_duplicates()
+    df_ids = df[['account_cd', 'account_nm', 'meter', 'measurement']].drop_duplicates()
 
     if USER is None:
         rs3.write_csv_log_to_S3(df_ids, 'df_ids')
@@ -133,7 +135,7 @@ def clean_data(raw_df: pd.DataFrame, datetime_col: str, y: str, startdate, endda
 
     # format for fitting and forecasting - select subset of columns and add unique_id column
     df.loc[:,'unique_id'] = df.apply(
-        lambda row: row.account + '_' + row.meter + '_' + row.measurement.split(' ')[0], axis=1)
+        lambda row: row.account_cd + '%' + row.meter + '%' + row.measurement.split(' ')[0], axis=1)
 
     df = df[[datetime_col, y, 'unique_id']]
     df.columns = ['ds', 'y', 'unique_id']
@@ -161,8 +163,27 @@ def filter_data(clean_df: pd.DataFrame):
     # of the remaining time series
     df_forecast_list = dfZeros[dfZeros['pct_zeros']<= 0.94]['unique_id']
     df_to_forecast = clean_df[clean_df['unique_id'].isin(df_forecast_list)]
-
     return df_to_forecast, df_naive
+
+class feature_eng:
+    def __init__(self, value):
+        pass
+
+    def add_day_of_the_week(df):
+        # df['ds'] = pd.to_datetime(df['ds'], format='%Y-%m-%d')
+        df['weekno'] = df['ds'].apply(lambda x: x.weekday())
+        return df
+
+    def hash_function(row):
+        return (sklearn.utils.murmurhash3_32(row.education))
+
+    def hash_meter(df):
+        meter_feature = df.groupby(by=["meter"]).count().reset_index()["meter"].to_frame()
+        meter_feature["meter"] = meter_feature.apply(self.hash_function, axis=1)
+        return meter_feature
+
+    def mod_function(row):
+        return(abs(row.meter_has) % n_features)
 
 def decompose(df: pd.DataFrame) -> pd.Series:
     dfdecompose = df.set_index('ds')

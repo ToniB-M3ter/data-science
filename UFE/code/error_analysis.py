@@ -1,6 +1,10 @@
 from time import time
 import os
-#os.environ['MPLCONFIGDIR']= tempfile.gettempdir()
+os.environ['MPLCONFIGDIR']= '/tmp/'
+
+from typing import Optional, Union
+from datetime import datetime as dt
+import re
 import pandas as pd
 import numpy as np
 
@@ -58,6 +62,55 @@ def r_sqed_adjed_calc():
         """
     pass
 
+def _metric_protections(y: np.ndarray, y_hat: np.ndarray,
+                        weights: Optional[np.ndarray]) -> None:
+    if not ((weights is None) or (np.sum(weights) > 0)):
+        raise Exception('Sum of `weights` cannot be 0')
+    if not ((weights is None) or (weights.shape == y.shape)):
+        raise Exception(
+        f'Wrong weight dimension weights.shape {weights.shape}, y.shape {y.shape}')
+
+def mse(y: np.ndarray, y_hat: np.ndarray,
+        weights: Optional[np.ndarray] = None,
+        axis: Optional[int] = None) -> Union[float, np.ndarray]:
+    _metric_protections(y, y_hat, weights)
+
+    delta_y = np.square(y - y_hat)
+    if weights is not None:
+        mse = np.average(delta_y[~np.isnan(delta_y)],
+                         weights=weights[~np.isnan(delta_y)],
+                         axis=axis)
+    else:
+        mse = np.nanmean(delta_y, axis=axis)
+    return mse
+
+def rel_mse(y, y_hat, y_train, mask=None):
+    if mask is None:
+       mask = np.ones_like(y)
+    n_series, n_hier, horizon = y.shape
+
+    eps = np.finfo(float).eps
+    y_naive = np.repeat(y_train[:,:,[-1]], horizon, axis=2)
+    norm = mse(y=y, y_hat=y_naive)
+    loss = mse(y=y, y_hat=y_hat, weights=mask)
+    loss = loss / (norm + eps)
+    return loss
+
+# %% ../nbs/evaluation.ipynb 11
+def msse(y, y_hat, y_train, mask=None):
+    if mask is None:
+       mask = np.ones_like(y)
+    n_series, n_hier, horizon = y.shape
+
+    eps = np.finfo(float).eps
+    y_in_sample_naive = y_train[:, :, :-1]
+    y_in_sample_true = y_train[:, :, 1:]
+    norm = mse(y=y_in_sample_true, y_hat=y_in_sample_naive)
+    loss = mse(y=y, y_hat=y_hat, weights=mask)
+    loss = loss / (norm + eps)
+    return loss
+
+
 def  cross_validate(Y_df, model, h):
     """
     Once the StatsForecastobject has been instantiated, we can use the cross_validation method, which takes the following arguments:
@@ -91,19 +144,20 @@ def  cross_validate(Y_df, model, h):
             df=df,
             h=h,
             step_size=h,
-            n_windows=5 # TODO parameterise
+            n_windows=4 # TODO make no of windows configurable
         )
 
         crossvalidation_df.rename(columns={'y': 'actual'}, inplace=True)  # rename actual values
         cvs.append(crossvalidation_df.copy())
+        print(crossvalidation_df.columns)
 
         cutoff = crossvalidation_df['cutoff'].unique()
         for k in range(len(cutoff)):
             cv = crossvalidation_df[crossvalidation_df['cutoff'] == cutoff[k]]
-            #x = StatsForecast.plot(df, cv.loc[:, cv.columns != 'cutoff'])
-            #x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/xval/xval_{}_{}.png'.format(i,str(model)))
+            x = StatsForecast.plot(df, cv.loc[:, cv.columns != 'cutoff'])
+            x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/xval/xval_{}_{}.png'.format(re.split('\\s|:', i)[0],str(model)))
 
-        rmse_score = df_rmse(crossvalidation_df['actual'], crossvalidation_df['AutoETS'])
+        rmse_score = df_rmse(crossvalidation_df['actual'], crossvalidation_df['AutoETS']) # TODO make model configurable
         cv_scores.append(rmse_score)
 
     # save scores and create df from ids and scores
@@ -113,10 +167,10 @@ def  cross_validate(Y_df, model, h):
     # save all cvs'
     cvs_all = pd.concat(cvs, ignore_index=True)
     if USER is None:
-        rs3.write_csv_log_to_S3(cvs_all, 'cvs_all')
+        rs3.write_csv_log_to_S3(cvs_scores_df, 'cvs_scores_df')
     else:
-        cvs_all.to_csv(
-            '/Users/tmb/PycharmProjects/data-science/UFE/output_files/crossvalidation_{}.csv'.format(id))
+        cvs_scores_df.to_csv(
+            '/Users/tmb/PycharmProjects/data-science/UFE/output_files/crossvalidation_{}.csv'.format(dt.today().strftime("%Y_%d_%m %H%M%S")))
     return cvs_scores_df
 
 def evaluate_cross_validation(df, metric):
