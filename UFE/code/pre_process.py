@@ -19,14 +19,26 @@ import logging
 module_logger = logging.getLogger('ts_engine.pre-process')
 logger = logging.getLogger('ts_engine.pre-process')
 
-def split_data(df):
-    #train = df.iloc[:int(0.75 * df['ds'].nunique())]  # TODO change 0.5 to horizon
-    #valid = df.iloc[int(0.25 * df['ds'].nunique()) + 1:]  # TODO change 0.5*len(df) to horizon
-    train = 1
-    valid = 2
-   # horizon (h)  = time periods into future for which a forecast will be made
-    h = round((len(df) * 0.10))
-    return train, valid, h
+def meta_str_to_dict(metadata_str):
+    meta_dict={}
+    dimkey_list=[]
+
+    meta_tmp = metadata_str.split('\n')
+    for i in meta_tmp:
+        if len(i.split(","))==2:
+            meta_dict[i.split(",")[0]]=i.split(",")[1]
+
+    for k,v in meta_dict.items():
+        if v == 'dim':
+            dimkey_list.append(k)
+
+    return dimkey_list
+
+def split_data(Y_df: pd.DataFrame, train_splt: float):
+    h = round(Y_df['ds'].nunique() * train_splt)  # forecast horizon
+    Y_test_df = Y_df.groupby('unique_id').tail(h)
+    Y_train_df = Y_df.drop(Y_test_df.index)
+    return Y_train_df, Y_test_df, h
 
 def select_date_range(data_freq: str)-> datetime:
     if USER is None: # if running on aws automatically set freq
@@ -120,13 +132,11 @@ def clean_data(raw_df: pd.DataFrame, datetime_col: str, y: str, startdate, endda
 
     logger.info('clean_data from '  + str(startdate) +' to '+ str(enddate))
 
-    # Remove whitespace from account name
-    #tmp_df = df['account_cd'].copy()
-    #tmp_df.replace(' ', '', regex=True, inplace=True)
-    #df.loc[:, 'account_cd'] = tmp_df
-
     # save unique combinations of account_id, meter, and measurement for formatting forecast file before saving
-    df_ids = df[['account_cd', 'account_nm', 'meter', 'measurement']].drop_duplicates()
+    df_ids = df[['account_cd', 'account_nm', 'meter', 'measure', 'ts_id']].drop_duplicates()
+    df_ts_ids = df['ts_id'].unique()
+
+    print('compare df_ids, ' + str(len(df_ids)) + ' to df_ts_ids, ' + str(len(df_ts_ids)))
 
     if USER is None:
         rs3.write_csv_log_to_S3(df_ids, 'df_ids')
@@ -134,9 +144,10 @@ def clean_data(raw_df: pd.DataFrame, datetime_col: str, y: str, startdate, endda
         df_ids.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/df_ids.csv')
 
     # format for fitting and forecasting - select subset of columns and add unique_id column
-    df.loc[:,'unique_id'] = df.apply(
-        lambda row: row.account_cd + '%' + row.meter + '%' + row.measurement.split(' ')[0], axis=1)
+    #df.loc[:,'unique_id'] = df.apply(
+     #   lambda row: row.account_cd + '%' + row.meter + '%' + row.measure.split(' ')[0], axis=1)
 
+    df['unique_id'] = df['ts_id']
     df = df[[datetime_col, y, 'unique_id']]
     df.columns = ['ds', 'y', 'unique_id']
 
@@ -149,21 +160,29 @@ def clean_data(raw_df: pd.DataFrame, datetime_col: str, y: str, startdate, endda
 
     return df, df_ids
 
-def filter_data(clean_df: pd.DataFrame):
-    z = clean_df['ds'].nunique()
+def filter_data(df: pd.DataFrame, zero_threshold: float, groupby_fields: list):
+    z = df['ds'].nunique()
     # Score time series based on percentage of zeros
-    dfZeros = clean_df.groupby('unique_id').agg(lambda x:x.eq(0).sum()).reset_index()
+    dfZeros = df.groupby(groupby_fields).agg(lambda x:x.eq(0).sum()).reset_index()
     dfZeros['pct_zeros'] = dfZeros['y']/z
 
-    # If less that 5% of values are non-zero, forecast with naive model
-    df_naive_list = dfZeros[dfZeros['pct_zeros']> 0.94]['unique_id']
-    df_naive = clean_df[clean_df['unique_id'].isin(df_naive_list)]
-    logger.info(str(len(df_naive_list)) + ' time series will be forecast with naive model out of ' + str(clean_df['unique_id'].nunique()))
+    # If less than threshold of values are non-zero, separate with view to forecast with naive model
+    keep = dfZeros[dfZeros['pct_zeros'] < zero_threshold]
+    df_to_forecast = pd.merge(df, keep[groupby_fields], left_on=groupby_fields,
+                             right_on=groupby_fields, how='right')
 
-    # of the remaining time series
-    df_forecast_list = dfZeros[dfZeros['pct_zeros']<= 0.94]['unique_id']
-    df_to_forecast = clean_df[clean_df['unique_id'].isin(df_forecast_list)]
+    df_naive = df[~df['ts_id'].isin(df_to_forecast['ts_id'])]
+
+    logger.info(str(len(df) - len(df_to_forecast)) + ' time series will be forecast with naive model out of ' + str(len(df)))
+    print(str(len(df) - len(df_to_forecast)) + ' time series will be forecast with naive model out of ' + str(len(df)))
     return df_to_forecast, df_naive
+
+def add_noise(Y_df):
+    # MinT along with other methods require a positive definite covariance matrix
+    # for the residuals, when dealing with 0s as residuals the methods break
+    # data is augmented with minimal normal noise to avoid this error.
+    Y_df['y'] = Y_df['y'] + np.random.normal(loc=0.0, scale=0.01, size=len(Y_df))
+    return Y_df
 
 class feature_eng:
     def __init__(self, value):
@@ -177,13 +196,13 @@ class feature_eng:
     def hash_function(row):
         return (sklearn.utils.murmurhash3_32(row.education))
 
-    def hash_meter(df):
+    def hash_meter(self, df):
         meter_feature = df.groupby(by=["meter"]).count().reset_index()["meter"].to_frame()
         meter_feature["meter"] = meter_feature.apply(self.hash_function, axis=1)
         return meter_feature
 
-    def mod_function(row):
-        return(abs(row.meter_has) % n_features)
+    def mod_function(self, row):
+        return(abs(row.meter_has) % self.n_features)
 
 def decompose(df: pd.DataFrame) -> pd.Series:
     dfdecompose = df.set_index('ds')

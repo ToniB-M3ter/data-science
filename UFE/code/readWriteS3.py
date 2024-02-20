@@ -28,91 +28,6 @@ def datapath(freq):
     key = 'usage.gz'
     return filepath, metakey, key
 
-def write_gz_csv_to_s3(df, filepath, key):
-    gz_buffer = BytesIO()
-
-    with gzip.GzipFile(mode='w', fileobj=gz_buffer) as gz_file:
-        df.to_csv(TextIOWrapper(gz_file, 'utf8'), index=False)
-
-    obj = s3.Object(DATABUCKET, filepath+key)
-    obj.put(Body=gz_buffer.getvalue())
-    return
-
-def write_csv_log_to_S3(df, data_name):
-    # set up for logging missing accounts
-    OBJECT_NAME ='logs/{}.csv'.format(data_name)
-    LAMBDA_LOCAL_TMP_FILE = '/tmp/{}.csv'.format(data_name)
-
-    with open(LAMBDA_LOCAL_TMP_FILE, 'w') as file:
-        writer = csv.writer(file)
-        writer.writerow(df)
-
-    s3clt.upload_file(LAMBDA_LOCAL_TMP_FILE, DATABUCKET, OBJECT_NAME)
-    return
-
-def write_meta_to_s3(metadata_str, freq, filepath, key):
-    metadata_byte = metadata_str.encode()
-
-    meta_bytes_daily = \
-    b"""nm, typ
-    meter, dim
-    measurement, dim
-    account_nm, dim
-    account_cd, dim
-    .model, dim
-    z, measure 
-    tm, time 
-    _intrvl, 1D
-    z0, measure
-    z1, measure"""
-
-    meta_bytes_hourly = \
-        b"""nm, typ
-        meter, dim
-        measurement, dim
-        account_nm, dim
-        account_cd, dim
-        .model, dim
-        z, measure 
-        tm, time 
-        _intrvl, 1D
-        z0, measure
-        z1, measure"""
-
-    if freq == '1h':
-        with gzip.open('/tmp/tmpmeta.txt.gz', 'wb') as f:
-            f.write(meta_bytes_hourly)
-    elif freq == '1D':
-        with gzip.open('/tmp/tmpmeta.txt.gz', 'wb') as f:
-            f.write(meta_bytes_daily)
-    else:
-        print('No associated freq for metadata file')
-
-    with gzip.open('/tmp/tmpmeta.txt.gz', 'rb') as f:
-        # obj = s3.Object(DATABUCKET, filepath + key)
-        # obj.put(Body=f)
-        s3client.put_object(Bucket=DATABUCKET, Body=f, Key=filepath + key)
-    return
-
-def write_model_to_s3(model, filepath, key):
-    serialised_model = pickle.dumps(model, protocol=pickle.HIGHEST_PROTOCOL)
-
-    response = boto3.client('s3').put_object(
-        Body=serialised_model,
-        Bucket=DATABUCKET,
-        Key=filepath+key
-    )
-    return
-
-def read_model_from_s3(filepath, key):  #(fit_folder+freq, model_aliases[0]+'.pkl')
-    model = pickle.loads(s3.Bucket(DATABUCKET).Object(filepath + key).get()['Body'].read())
-    return model
-
-def read_model_from_local():
-    with open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/model.pkl', 'rb') as f:
-        model = pickle.load(f)
-    return model
-
 def read_from_S3(filepath, key):
     #logger = logging.getLogger('ts_engine.readWrite.read_from_s3')
     #logger.info('get file %s from %s' % (key, filepath))
@@ -150,6 +65,91 @@ def get_data_local():
     df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/data/dfUsage.csv')
     df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%d %H:%M:%SZ')
     return df
+
+def read_model_from_s3(filepath, key):  #(fit_folder+freq, model_aliases[0]+'.pkl')
+    model = pickle.loads(s3.Bucket(DATABUCKET).Object(filepath + key).get()['Body'].read())
+    return model
+
+def read_model_from_local():
+    with open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/model.pkl', 'rb') as f:
+        model = pickle.load(f)
+    return model
+
+def write_model_to_s3(model, filepath, key):
+    serialised_model = pickle.dumps(model, protocol=pickle.HIGHEST_PROTOCOL)
+
+    response = boto3.client('s3').put_object(
+        Body=serialised_model,
+        Bucket=DATABUCKET,
+        Key=filepath+key
+    )
+    return
+
+def write_csv_log_to_S3(df, data_name):
+    # set up for logging missing accounts
+    OBJECT_NAME ='logs/{}.csv'.format(data_name)
+    LAMBDA_LOCAL_TMP_FILE = '/tmp/{}.csv'.format(data_name)
+
+    with open(LAMBDA_LOCAL_TMP_FILE, 'w') as file:
+        writer = csv.writer(file)
+        writer.writerow(df)
+
+    s3clt.upload_file(LAMBDA_LOCAL_TMP_FILE, DATABUCKET, OBJECT_NAME)
+    return
+
+def write_meta_to_s3(metadata_str, freq, filepath, key):
+    metadata_byte = metadata_str.encode()
+
+    meta_bytes_daily = \
+    b"""nm, typ
+    meter, dim
+    measure, dim
+    account_nm, dim
+    account_cd, dim
+    .model, dim
+    z, measure 
+    tm, time 
+    _intrvl, 1D
+    z0, measure
+    z1, measure"""
+
+    meta_bytes_hourly = \
+        b"""nm, typ
+        meter, dim
+        measure, dim
+        account_nm, dim
+        account_cd, dim
+        .model, dim
+        z, measure 
+        tm, time 
+        _intrvl, 1D
+        z0, measure
+        z1, measure"""
+
+    if freq == '1h':
+        with gzip.open('/tmp/tmpmeta.txt.gz', 'wb') as f:
+            f.write(meta_bytes_hourly)
+    elif freq == '1D':
+        with gzip.open('/tmp/tmpmeta.txt.gz', 'wb') as f:
+            f.write(meta_bytes_daily)
+    else:
+        print('No associated freq for metadata file')
+
+    with gzip.open('/tmp/tmpmeta.txt.gz', 'rb') as f:
+        # obj = s3.Object(DATABUCKET, filepath + key)
+        # obj.put(Body=f)
+        s3client.put_object(Bucket=DATABUCKET, Body=f, Key=filepath + key)
+    return
+
+def write_gz_csv_to_s3(df, filepath, key):
+    gz_buffer = BytesIO()
+
+    with gzip.GzipFile(mode='w', fileobj=gz_buffer) as gz_file:
+        df.to_csv(TextIOWrapper(gz_file, 'utf8'), index=False)
+
+    obj = s3.Object(DATABUCKET, filepath+key)
+    obj.put(Body=gz_buffer.getvalue())
+    return
 
 def main():
     freq_input = input("Hourly (1h) or Daily (1D) frequency: ")

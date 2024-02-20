@@ -110,8 +110,16 @@ def msse(y, y_hat, y_train, mask=None):
     loss = loss / (norm + eps)
     return loss
 
+def cross_validate_simple(Y_df, model, h):
+    crossvalidation_df = model.cross_validation(
+        df=Y_df,
+        h=h,
+        step_size=h,
+        n_windows=4  # TODO make no of windows configurable
+    )
+    return crossvalidation_df
 
-def  cross_validate(Y_df, model, h):
+def cross_validate(Y_df, model, h):
     """
     Once the StatsForecastobject has been instantiated, we can use the cross_validation method, which takes the following arguments:
     df: training data frame with StatsForecast format
@@ -174,6 +182,9 @@ def  cross_validate(Y_df, model, h):
     return cvs_scores_df
 
 def evaluate_cross_validation(df, metric):
+    print(df.columns)
+    print(df.index[0:10])
+    df.reset_index(inplace=True)
     models = df.drop(columns=['unique_id', 'ds', 'cutoff', 'y']).columns.tolist()
     evals = []
     # Calculate loss for every unique_id and cutoff.
@@ -189,12 +200,25 @@ def get_best_model_forecast(forecasts_df, evaluation_df):
     df = forecasts_df.set_index('ds', append=True).stack().to_frame().reset_index(level=2) # Wide to long
     df.columns = ['model', 'best_model_forecast']
     df = df.join(evaluation_df[['best_model']])
-    df = df.query('model.str.replace("-lo-90|-hi-90", "", regex=True) == best_model').copy()
+    df = df.query('model.str.replace("-lo-95|-hi-95", "", regex=True) == best_model').copy()
     df.loc[:, 'model'] = [model.replace(bm, 'best_model') for model, bm in zip(df['model'], df['best_model'])]
     df = df.drop(columns='best_model').set_index('model', append=True).unstack()
     df.columns = df.columns.droplevel()
     df = df.reset_index(level=1)
     return df
+#
+# def get_best_model_forecast(forecasts_df, evaluation_df):
+#     df = forecasts_df.set_index(['unique_id', 'ds']).stack().to_frame().reset_index(level=2) # Wide to long
+#     df.columns = ['model', 'best_model_forecast']
+#     print(df.tail(30))
+#     df = df.join(evaluation_df[['best_model']])
+#     df = df.query('model.str.replace("-lo-95|-hi-95", "", regex=True) == best_model').copy()
+#     df.loc[:, 'model'] = [model.replace(bm, 'best_model') for model, bm in zip(df['model'], df['best_model'])]
+#     df = df.drop(columns='best_model').set_index('model', append=True).unstack()
+#     df.columns = df.columns.droplevel()
+#     df.columns.name = None
+#     df = df.reset_index()
+#     return df
 
 def main():
     crossvaldation_df = cross_validate()

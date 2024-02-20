@@ -13,14 +13,17 @@ Y_rec_df: Coherent reconciled predictions
 """
 import numpy as np
 import pandas as pd
-import json
 import os
+import json
 from time import time
+from datetime import datetime as dt
 import matplotlib.pyplot as plt
+from tabulate import tabulate
+from datetime import datetime as dt
 
 import readWriteS3 as rs3
-import error_analysis as err
-import pre_process as pp
+import post_process as postproc
+import pre_process as preproc
 
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
@@ -44,12 +47,24 @@ from statsforecast.models import (
 from hierarchicalforecast.core import HierarchicalReconciliation
 from hierarchicalforecast.evaluation import HierarchicalEvaluation
 from hierarchicalforecast.methods import BottomUp, TopDown, MiddleOut, MinTrace
-from hierarchicalforecast.utils import aggregate, HierarchicalPlot
+from hierarchicalforecast.utils import aggregate, HierarchicalPlot, is_strictly_hierarchical
+from hierarchicalforecast.evaluation import scaled_crps, msse, energy_score
+
 
 # this makes it so that the outputs of the predict methods have the id as a column
 # instead of as the index
 os.environ['NIXTLA_ID_AS_COL'] = '1'
+os.environ['ORG'] = 'onfido'
 USER=os.getenv('USER')
+ORG=os.getenv('ORG')
+
+tidy_folder = '2_tidy/'
+fit_folder = '3_fit/'
+forecast_folder = '4_forecast/'
+
+# base forecast file paths
+yhat_file = f'NO/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/Y_hat_df.csv'
+yfitted_file = f'NO//Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/Y_fitted_df.csv'
 
 def get_keys():
     metadatakey = 'usage_meta.gz'
@@ -65,76 +80,52 @@ def get_season(data_freq):
         season = 24
     return season
 
-def add_noise(Y_df):
-    # MinT along other methods require a positive definite covariance matrix
-    # for the residuals, when dealing with 0s as residuals the methods break
-    # data is augmented with minimal normal noise to avoid this error.
-    Y_df['y'] = Y_df['y'] + np.random.normal(loc=0.0, scale=0.01, size=len(Y_df))
-    return Y_df
-
 def get_spec():
     Spc = [
         ['org'],
-        ['org', 'account'],
+        ['org', 'account_cd'],
         ['org','meter'],
-        ['org','account','meter']
+        ['org','account_cd','meter']
     ]
     return Spc
 
 def get_aggregates(Y_df, Spc):
     Y_df, S_df, tags = aggregate(Y_df, Spc)
     Y_df = Y_df.reset_index()
-
-    #print('hier_levels')
-    #print(hier_levels)
-    #print('hier_idxs')
-    #print(hier_idxs[0:10])
-    hier_linked_idxs = S_df.values.T
-    #print(hier_linked_idxs)
     return Y_df, S_df, tags
 
-def hier_prep(df: pd.DataFrame, startdate, enddate) -> pd.DataFrame:
+def save_tags(tags):
+    dict_with_lists = {k:v.tolist() for k,v in tags.items()}
+    with open(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/tags.json', 'w') as fp:
+        json.dump(dict_with_lists, fp, indent=4)
+    return
+
+def hier_prep(df: pd.DataFrame, dimkeys, startdate, enddate) -> pd.DataFrame:
     # filter dates
     datetime_mask = (df['tm'] > startdate) & (df['tm'] <= enddate)
     df = df.loc[datetime_mask]
     print('Fit from '  + str(startdate) +' to '+ str(enddate))
 
-    # Remove whitespace from account name
-    #tmp_df = df['account_cd'].copy()
-    #tmp_df.replace(' ', '', regex=True, inplace=True)  #account_cd=account code (no spaces); account_nm=account name w/spaces
-    #df[:, 'account_cd'] = tmp_df
+    # dimkeys ['meter', 'measure', 'account_cd', 'account_nm']
+    ts_id = ['ts_id']
+    cols = dimkeys+ts_id
+    df_ids = df[cols].drop_duplicates()
 
-    # drop unneeded columns & add column for org and rename tm --> ds
-    df = df[['tm','account_cd','meter', 'measurement', 'y']]
+    # remove account_nm as it is redundant with account_cd
+    cols.remove('account_nm') #['meter', 'measure', 'account_cd', 'ts_id']
+    measurement_cols = ['tm','y']
+    cols = cols+measurement_cols #['meter', 'measure', 'account_cd', 'ts_id', 'tm', 'y']
+
+    # drop unneeded columns & add column for org and rename tm --> ds for forecasting
+    df = df[cols]
     # if <aggregated> accounts, meter or measurements exist remove them as these aggregations will be created with hier aggregations
-    df = df[(df.account_cd != '<aggregated>') & (df.meter != '<aggregated>') & (df.measurement != '<aggregated>')]
-    df.insert(0,'org', 'onfido')  # TODO parmeterise org name
-    df= df.rename(columns={'tm':'ds', 'account_cd':'account'})
-    df=df[['org','account','meter','ds','y']]
-    print('length of df: ' + str(len(df)))
-
-    #df_ids = df[['account', 'meter']].drop_duplicates()
-    #df_ids.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/df_ids.csv')
-    return df
-
-def hier_filter_df(df):
-    """Filter out time series that are vastly zeros e.g. 75% or > zeros"""
-    z = df['ds'].nunique()
-    dfZeros = df.groupby(['org', 'account', 'meter']).agg(lambda x: x.eq(0).sum()).reset_index()
-    dfZeros['pct_zeros'] = dfZeros['y'] / z
-    keep = dfZeros[dfZeros['pct_zeros'] < 0.25]
-    df_to_Forecast = pd.merge(df, keep[['account', 'meter', 'pct_zeros']], left_on=['account', 'meter'],
-                        right_on=['account', 'meter'], how='right')
-
-    df_to_Forecast.to_csv(
-        '/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/df_to_Forecast.csv')
-    return df_to_Forecast
-
-def split_data(Y_df):
-    h = round(Y_df['ds'].nunique() * 0.15)  # forecast horizon
-    Y_test_df = Y_df.groupby('unique_id').tail(h)
-    Y_train_df = Y_df.drop(Y_test_df.index)
-    return Y_train_df, Y_test_df, h
+    df = df[(df.account_cd != '<aggregated>') & (df.meter != '<aggregated>') & (df.measure != '<aggregated>')]
+    df.insert(0,'org',ORG)
+    cols.append('org') #['org','meter', 'measure', 'account_cd', 'ts_id', 'tm', 'y']
+    df=df[cols]
+    df = df.rename(columns={'tm': 'ds'})
+    print(df.tail(10))
+    return df, df_ids
 
 def base_forecasts(Y_train_df, data_freq, h):
     season = get_season(data_freq)
@@ -156,60 +147,103 @@ def base_forecasts(Y_train_df, data_freq, h):
     return Y_hat_df, Y_fitted_df
 
 def reconcile_forecasts(Y_hat_df, Y_fitted_df, Y_train_df, S_df, tags):
-    reconcilers = [
-        BottomUp(),
-        #TopDown(method='average_proportions'),  #options forecast_proportions, average_proportions, proportion_averages
-        MinTrace(method='mint_shrink', nonnegative=True),
-        MinTrace(method='ols', nonnegative=True)
-    ]
+    Y_hat_df.set_index('unique_id', inplace=True)
+    Y_fitted_df.set_index('unique_id', inplace=True)
+
+    if is_strictly_hierarchical(S=S_df.values.astype(np.float32),
+                                tags={key: S_df.index.get_indexer(val) for key, val in tags.items()}):
+        reconcilers = [
+            BottomUp(),
+            TopDown(method='average_proportions'),
+            TopDown(method='proportion_averages'),
+            MinTrace(method='ols', nonnegative=True),
+            MinTrace(method='wls_var', nonnegative=True),
+            MinTrace(method='mint_shrink', nonnegative=True)
+        ]
+    else:
+        reconcilers = [
+            BottomUp(),
+            MinTrace(method='ols', nonnegative=True),
+            MinTrace(method='wls_var', nonnegative=True),
+            MinTrace(method='mint_shrink', nonnegative=True)
+        ]
+
     hrec = HierarchicalReconciliation(reconcilers=reconcilers)
     try: Y_rec_df = hrec.reconcile(Y_hat_df=Y_hat_df,
-                              Y_df=Y_train_df, #Y_fitted_df
-                              S=S_df,
-                              tags=tags)
+                                   Y_df=Y_fitted_df, #Y_fitted_df Y_train_df
+                                   S=S_df,
+                                   tags=tags,
+                                   level=[95],
+                                   intervals_method = 'normality')
+                                   #intervals_method='permbu') # use bootstrap method if levels are not strictly hierarchical
     except Exception as error:
-        print("An exception has occured when trying to reconcile the hierarchy with MinT Shrink method, "
-              "reconciliation will occur by Bottoms up and MinTrace(OLS) methods", error)
-        reconcilers = [BottomUp(), MinTrace(method='ols', nonnegative=True)]
+        print("An exception has occured when trying to reconcile the hierarchy "
+              "reconciliation will occur by Bottoms up, MinTrace(wls_var) and MinTrace(OLS) methods", error)
+        reconcilers = [
+            BottomUp(),
+            MinTrace(method='ols', nonnegative=True),
+            MinTrace(method='wls_var', nonnegative=True)
+        ]
         hrec = HierarchicalReconciliation(reconcilers=reconcilers)
-        Y_rec_df = hrec.reconcile(Y_hat_df=Y_hat_df,
-                                  Y_df=Y_train_df, #Y_fitted_df
-                                  S=S_df,
-                                  tags=tags)
+
+        Y_rec_df = hrec.bootstrap_reconcile(Y_hat_df=Y_hat_df,
+                                            Y_df=Y_fitted_df,
+                                            S_df=S_df, tags=tags,
+                                            level=[95],
+                                            intervals_method='normality',
+                                            num_samples=10, num_seeds=10)
+
+        #Y_rec_df = hrec.reconcile(Y_hat_df=Y_hat_df,
+    #                         Y_df=Y_fitted_df, #Y_fitted_df Y_train_df
+    #                        S=S_df,
+    #                       tags=tags)
+                                  #level=[95])
+                                  #intervals_method='permbu') # use bootstrap method if levels are not strictly hierarchical
     return Y_rec_df
 
 def evaluate_forecasts(Y_df, Y_rec_df, Y_test_df, Y_train_df, tags):
     eval_tags = {}
     eval_tags['org'] = tags['org']
-    eval_tags['account'] = tags['org/account']
+    eval_tags['account'] = tags['org/account_cd']
     eval_tags['meter'] = tags['org/meter']
-    eval_tags['account_meter'] = tags['org/account/meter']
+    eval_tags['account_meter'] = tags['org/account_cd/meter']
     eval_tags['All'] = np.concatenate(list(tags.values()))
 
-    evaluator = HierarchicalEvaluation(evaluators=[err.rmse_calc])
+    evaluator = HierarchicalEvaluation(evaluators=[postproc.rmse_calc])
     evaluation = evaluator.evaluate(
         Y_hat_df=Y_rec_df,  # feeding in reconciled values, e.g. Y_rec_df, not just forecast values
         Y_test_df=Y_test_df.set_index('unique_id'),
         tags=tags,
-        Y_df= Y_df    #Y_train_df.set_index('unique_id'),
+        Y_df= Y_df #.set_index('uniques_id')    #Y_train_df.set_index('unique_id'),
     )
-    #evaluation = evaluation.drop('Overall')
-    #evaluation.columns = ['Base', 'BottomUp', 'MinTrace(mint_shrink)', 'MinTrace(ols)']
 
-    #evaluation = evaluation.applymap('{:.2f}'.format)
     evaluation = evaluation.map('{:.2f}'.format)
-    print(evaluation)
-    #print(evaluation.query('metric == "rmse_calc"'))
+    print(evaluation.query('metric == "rmse_calc"'))
     return evaluation
 
-def select_best_model(Y_rec_df, evaluation): #TODO programatically select best model
+def select_rec_method(Y_rec_df, evaluation):
+    # Select best model based on evaluation matrix
+    # Drop metric; hi / lo intervals columns
+    #evaluation.drop(list(evaluation.filter(regex='metric')), axis=1, inplace=True)
+    evaluation.reset_index(level=1, drop=True, inplace=True)
+    evaluation.drop(list(evaluation.filter(regex='-lo')), axis=1, inplace=True)
+    evaluation.drop(list(evaluation.filter(regex='-hi')), axis=1, inplace=True)
+    evaluation.loc['mean']=evaluation.mean(numeric_only=True)
+    eval_trans = evaluation.T
+    print(tabulate(eval_trans, headers='keys', tablefmt='psql'))
+    rec_meth = eval_trans.idxmin()['Overall']
+    # Now filter values from the reconciled forecasts
     Y_rec_df.reset_index(inplace=True)
-    best_model = Y_rec_df[['unique_id', 'ds','AutoETS-lo-95', 'AutoETS-hi-95', 'AutoETS/MinTrace_method-ols_nonnegative-True']]
-    return best_model
+    Y_best_rec_df = Y_rec_df[['unique_id', 'ds',
+                           rec_meth,
+                           rec_meth+'-lo-95',
+                           rec_meth+'-hi-95']]
+    return rec_meth, Y_best_rec_df
 
-def prep_forecast_for_s3(df_best_model: pd.DataFrame, tags, model_name):
+def prep_forecast_for_s3(df_best_rec: pd.DataFrame, tags, df_ids, model_name):
     """"df_best_model should contain forecast values only for model determined to be best fit
-    e.g. df_best_model = Y_rec_df[['unique_id','ds','AutoETS/MinTrace_method-ols', 'AutoETS-lo-95','AutoETS-hi-95']]"""
+    along with the prediction intervals
+    e.g. df_best_rec = Y_rec_df[['unique_id','ds','AutoETS/MinTrace_method-ols', 'AutoETS/MinTrace_method-ols-lo-95','AutoETS/MinTrace_method-ols-hi-95']]"""
 
     splt_tag = []
     for tag in tags:
@@ -218,62 +252,50 @@ def prep_forecast_for_s3(df_best_model: pd.DataFrame, tags, model_name):
     orgs=[]
     accounts=[]
     meters=[]
-    measurements=[]
+    measures=[]
 
-    # construct lists of hierarchical levels for final file
+    # construct lists of hierarchical levels for final file # TODO fix for any amount of dimensions
     for tag in splt_tag:
         if len(tag) == 4:
-            measurements.append('check_count')
+            measures.append('check_count') # onfido only have one measure so hard coding this
             meters.append(tag[2])
             accounts.append(tag[1])
             orgs.append(tag[0])
         elif len(tag) == 3:
-            measurements.append('check_count')
+            measures.append('check_count')
             meters.append(tag[2])
             accounts.append(tag[1])
             orgs.append(tag[0])
         elif len(tag) == 2:
-            measurements.append('check_count')
-            meters.append('ALL')
+            measures.append('check_count')
+            meters.append('<aggregated>')
             accounts.append(tag[1])
             orgs.append(tag[0])
         elif len(tag) == 1:
-            measurements.append('check_count')
-            meters.append('ALL')
-            accounts.append('ALL')
+            measures.append('check_count')
+            meters.append('<aggregated>')
+            accounts.append('<aggregated>')
             orgs.append(tag[0])
         else:
             print(len(tag))
             print(tag)
             print('unknown tag')
 
-    hier_forecast = pd.DataFrame({"unique_id": tags, "org": orgs, "account_cd": accounts, "meter": meters, 'measurement': measurements})
+    hier_forecast = pd.DataFrame({"unique_id": tags, "org": orgs, "account_cd": accounts, "meter": meters, 'measure': measures}) #TODO add ts_id and join on it
+    hier_forecast = pd.merge(hier_forecast, df_ids, on=['account_cd', 'meter', 'measure'])
 
-    #df_best_model.reset_index(inplace=True)
-    #df_best_model['z'] = df_best_model.iloc[:,-1:] #get last column of df
-    print(df_best_model.columns)
-    df_best_model.columns = ['unique_id','ds', 'z0','z1','z']
-    df_best_model['tm'] = df_best_model["ds"].dt.strftime('%Y-%m-%dT%H:%M:%SZ')
-    df_best_model['.model'] = model_name[0]
+    df_best_rec.columns = ['unique_id', 'ds', 'z','z0', 'z1']
+    df_best_rec['tm'] = df_best_rec["ds"].dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+    df_best_rec['.model'] = model_name
 
-    hier_forecast = pd.merge(hier_forecast, df_best_model, on='unique_id')
-    hier_forcast = hier_forecast[['tm'  # timestamp
-        , 'meter'
-        , 'measurement'
-        , 'account_cd'  # account m3ter uidw
-        , 'account_nm'
-        , 'z'  # prediction
-        , 'z0'  # lower bound of 95% confidence interval
-        , 'z1'  # lower bound of 95% confidence interval
-        , '.model'  # model (e.g. model_)
-            ]]
-    print(hier_forecast.head())
+    hier_frcst = pd.merge(hier_forecast[['unique_id','account_cd', 'account_nm', 'org','meter','measure']],
+                          df_best_rec[['unique_id', 'tm', 'z0', 'z1', 'z', '.model']], on='unique_id')
+    #hier_frcst = pd.merge(df_best_rec[['unique_id', 'tm', 'z', 'z0', 'z1', '.model']], df_ids, left_on='unique_id', right_on='ts_id')
+    hier_frcst.drop("unique_id", axis=1, inplace=True)
+    fin_hier_forcast = hier_frcst[['ts_id', 'account_cd', 'account_nm', 'meter', 'measure', 'tm', 'z', 'z0', 'z1', '.model']]
+    print(tabulate(fin_hier_forcast.tail(), headers='keys', tablefmt='psql'))
 
-    if USER is None:
-        rs3.write_csv_log_to_S3(hier_forecast, 'hier_forecast')
-    else:
-        hier_forecast.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hier_forecast.csv')
-    return hier_forecast
+    return fin_hier_forcast
 
 def plot_correlations(df):
     fig, axs = plt.subplots(nrows=1, ncols=2)
@@ -308,86 +330,110 @@ def other_plots(S_df, tags, Y_df, Y_hat_df):
     hplot = HierarchicalPlot(S=S_df, tags=tags)  # plotting class containing plotting methods
     hplot.plot_summing_matrix()  # plot hierarchical aggregation contraints matrix, S
     hplot.plot_hierarchically_linked_series( # plot collection of hierarchically linked series plots associated with the bottom_series and filetered modls and prediction interval level
-        bottom_series=time_series[271],
+        bottom_series='onfido/001240000097LPXAA2/document_report_standard_hybrid',
         Y_df=Y_df.set_index('unique_id')
         )
     plt.show()
 
     return
 
-def forecast_plots(S_df, tags, Y_df, Y_hat_df, Y_rec_df, series):
+def forecast_plots(S_df, tags, Y_df, Y_hat_df, Y_rec_df, ser):
     hplot = HierarchicalPlot(S=S_df, tags=tags) # plotting class containing plotting methods
 
+    cols = Y_rec_df.columns
+    recs = [item for item in cols if '-lo' not in item]
+    recs = [item for item in cols if '-hi' not in item]
+    recs = [item for item in cols if '-index' not in item]
+    recs = [item for item in cols if '-sample' not in item]
+
     plot_df = pd.concat([Y_df.set_index(['unique_id', 'ds']),
                          Y_rec_df.set_index('ds', append=True)], axis=1)
     plot_df = plot_df.reset_index('ds')
 
-    # plot single series with filtered models and prediction interval
-    plot_df = pd.concat([Y_df.set_index(['unique_id', 'ds']),
-                         Y_rec_df.set_index('ds', append=True)], axis=1)
-    plot_df = plot_df.reset_index('ds')
+    print(plot_df.tail())
+
     hplot.plot_series(
-        series=series,
+        series=ser,
         Y_df=plot_df,
-        models=['y', 'AutoETS', 'SeasonalNaive','AutoETS/BottomUp',	'SeasonalNaive/BottomUp', 'AutoETS/MinTrace_method-ols_nonnegative-True', 'SeasonalNaive/MinTrace_method-ols_nonnegative-True'],
-        level=[90]
+        models=recs.append('y'),
+        level=[95]
     )
     plt.xticks(rotation=90)
     plt.show()
     return
 
-def main(data, freq, metadata_str, account):
+def main(data, freq, dimkeys_list, account):
     # Clean and Prepare Data
-    startdate, enddate = pp.select_date_range(freq)
-    df = hier_prep(data, startdate, enddate)
-    df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/df.csv')
+    startdate, enddate = preproc.select_date_range(freq)
+    df, df_ids = hier_prep(data, dimkeys_list, startdate, enddate)
+    df_ids.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/df_ids.csv')
+    df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/df.csv')
 
     # Filter time series with > 90% zeros out of analysis
-    df_to_forecast = hier_filter_df(df)
+    df_to_forecast, df_naive = preproc.filter_data(df, 0.90, ['ts_id']) #TODO parameterise to all dimensions
+    df_to_forecast.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/df_to_forecast.csv')
 
     Spc = get_spec()
     Y_df, S_df, tags = get_aggregates(df_to_forecast, Spc) # unique_id column created ; if filtering use df_to_forecast
-    Y_df = add_noise(Y_df)
-    Y_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/Y_df.csv')
-    S_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/S_df.csv')
+    Y_df = preproc.add_noise(Y_df)
+    save_tags(tags)
+    Y_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/Y_df.csv')
+    S_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/S_df.csv')
+    #tags_df = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in tags.items()]))
+
 
     #plot_correlations(Y_df) # Partial and Auto Correlation plots
-    Y_train_df, Y_test_df, h = split_data(Y_df)
+    Y_train_df, Y_test_df, h = preproc.split_data(Y_df, 0.18)
+    Y_train_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/Y_train_df.csv')
+    Y_test_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/Y_test_df.csv')
 
-    # Fit Base Forecasts
-    init_fit = time()
-    Y_hat_df, Y_fitted_df= base_forecasts(Y_train_df, freq, h) # change to Y_df for prod
-    end_fit=time()
-    print(f'Forecast Minutes: {(end_fit - init_fit) / 60}')
+    if os.path.exists(yhat_file): # if we have a base forecasts use them to save time
+        Y_hat_df = pd.read_csv(yhat_file, index_col=0)
+        Y_fitted_df = pd.read_csv(yfitted_file, index_col=0)
+    else:
+        print('Fitting base models')
+        # Fit Base Forecasts
+        init_fit = time()
+        Y_hat_df, Y_fitted_df= base_forecasts(Y_train_df, freq, h) # change to Y_df for prod
+        end_fit=time()
+        print(f'Forecast Minutes: {(end_fit - init_fit) / 60}')
 
-    Y_hat_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/Y_hat_df.csv')
-    Y_fitted_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/Y_fitted_df.csv')
+        # Save
+        Y_hat_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/Y_hat_df.csv')
+        Y_fitted_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/Y_fitted_df.csv')
 
     # Reconcile
     Y_rec_df = reconcile_forecasts(Y_hat_df, Y_fitted_df, Y_train_df, S_df, tags)
-    Y_rec_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/Y_rec_df.csv')
+    Y_rec_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/Y_rec_df.csv')
     rs3.write_csv_log_to_S3(Y_rec_df, 'reconciled_forecasts')
 
     # Evaluate
-    #evaluation = evaluate_forecasts(Y_df, Y_rec_df, Y_test_df, Y_train_df, tags)
-    #evaluation.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/evaluation.csv')
-
-    # TODO select best model/reconciliation method
-    evaluation = pd.DataFrame()
-    best_model=select_best_model(Y_rec_df, evaluation)
+    evaluation = evaluate_forecasts(Y_df, Y_rec_df, Y_test_df, Y_train_df, tags)
+    evaluation.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/evaluation.csv')
+    # And select best rconciliation method
+    best_rec_meth, Y_best_rec_df=select_rec_method(Y_rec_df, evaluation)
+    Y_best_rec_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/Y_best_rec_df.csv')
 
     # Prep for save
-    prep_forecast_for_s3(best_model, S_df.index,['AutoETS'])
+    hier_forecast=prep_forecast_for_s3(Y_best_rec_df, S_df.index, df_ids, best_rec_meth)
+    if USER is None:
+        rs3.write_gz_csv_to_s3(hier_forecast, forecast_folder + freq + '/',
+                               'hier' + '_' + dt.today().strftime("%Y_%d_%m") + '_' + 'usage.gz')
+        rs3.write_meta_to_s3(metadata_str, freq, forecast_folder + freq + '/',
+                             'hier' + '_' + dt.today().strftime("%Y_%d_%m") + '_' + 'usage_meta.gz')
+    else:
+        hier_forecast.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/hier_forecast.csv')
 
     # Visualise data
-    other_plots(S_df, tags, Y_df, Y_hat_df)
+    #other_plots(S_df, tags, Y_df, Y_hat_df)
     cnt = 0
     while cnt < 20:
-        series = input("which series? ")
-        if not series:
+        ser = input("which series? ")
+        if not ser:
             pass
         else:
-            forecast_plots(S_df, tags, Y_df, Y_hat_df, Y_rec_df, series)
+            forecast_plots(S_df, tags, Y_df, Y_hat_df, Y_rec_df, ser)
+            pass
         cnt = cnt+1
 
 if __name__ == "__main__":
@@ -397,5 +443,6 @@ if __name__ == "__main__":
 
     key, metadatakey = get_keys()
     dataloadcache, metadata_str = rs3.get_data('2_tidy/' + freq + '/', key, metadatakey)
-    data, account = pp.select_ts(dataloadcache)
-    main(data, freq, metadata_str, account)
+    dimkey_list = preproc.meta_str_to_dict(metadata_str)
+    data, account = preproc.select_ts(dataloadcache)
+    main(data, freq, dimkey_list, account)

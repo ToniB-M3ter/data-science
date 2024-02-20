@@ -8,13 +8,13 @@ from tempfile import TemporaryFile
 from io import BytesIO, StringIO, TextIOWrapper
 import pandas as pd
 
-os.environ['DATABUCKET'] = 'm3ter-usage-forecasting-poc-m3ter-332767697772-us-east-1'
+os.environ['DATABUCKET'] = 'm3ter-usage-forecasting-poc-onfido-332767697772-us-east-1'
 os.environ['UPLOADBUCKET'] = 'tmbbucket'
 global DATABUCKET
 global UPLOADBUCKET
 DATABUCKET = os.getenv('DATABUCKET')
 UPLOADBUCKET = os.getenv('UPLOADBUCKET')
-boto3.setup_default_session(profile_name='customers-admin') #ml-alpha-admin m3ter-ml-labs-prod
+boto3.setup_default_session(profile_name='m3ter-ml-labs-prod') #ml-alpha-admin m3ter-ml-labs-prod
 
 s3 = boto3.resource('s3')
 bucket = s3.Bucket(UPLOADBUCKET)
@@ -63,7 +63,6 @@ def upload_gzipped(bucket, key, fp, compressed_fp=None, content_type='text/plain
         {'ContentType': content_type, 'ContentEncoding': 'gzip'})
     return
 
-
 def download_gzipped(bucket, key, fp, compressed_fp=None):
     """Download and uncompress contents from S3 to fp.
     If compressed_fp is None, the compression is performed in memory.
@@ -74,7 +73,6 @@ def download_gzipped(bucket, key, fp, compressed_fp=None):
     compressed_fp.seek(0)
     with gzip.GzipFile(fileobj=compressed_fp, mode='rb') as gz:
         shutil.copyfileobj(gz, fp) # gz is gzip file
-
 
 def upload_file_in_memory(bucket, key):
     upload_file = '/Users/tmb/PycharmProjects/data-science/UFE/output_files/engine_p.csv'
@@ -106,7 +104,6 @@ def example2(bucket, key):
 
     with open(key, 'wb') as fp, TemporaryFile() as helper_fp:
         download_gzipped(bucket, key, fp, compressed_fp=helper_fp)
-
 
 def main():
     # Get file location and name

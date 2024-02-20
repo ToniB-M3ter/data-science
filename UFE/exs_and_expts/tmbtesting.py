@@ -1,13 +1,12 @@
 # running code from CL
 # poetry run python UFE/code/tmbtesting.py
 
-
+import sys
+sys.path.insert(1, '/Users/tmb/PycharmProjects/data-science/UFE/code')
 # plotting
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import plotly.express as px
-import sklearn
 import boto3
+from faker import Faker
 s3 = boto3.resource("s3")
 s3client = boto3.client("s3")
 import sys, os
@@ -16,10 +15,9 @@ import gzip
 from io import StringIO, BytesIO, TextIOWrapper
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-
-# data wrangling
-import numpy as np
 import pandas as pd
+
+import readWriteS3 as rs3
 
 # predicting
 from statsmodels.tsa.api import acf, graphics, pacf
@@ -31,11 +29,12 @@ from statsmodels.tsa.seasonal import STL
 
 os.environ['DATABUCKET']  = 'm3ter-usage-forecasting-poc-m3ter-332767697772-us-east-1'
 DATABUCKET = os.getenv('DATABUCKET')
-boto3.setup_default_session(profile_name='m3ter-ml-labs-prod') #ml-alpha-admin
+boto3.setup_default_session(profile_name='ml-labs-prod')
+
+df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/df.csv', index_col=0)
 
 # Set service to s3
 s3 = boto3.resource("s3")
-
 
 def plot_raw(data: pd.DataFrame, title: str):
     fig, ax = plt.subplots()
@@ -331,6 +330,27 @@ def write_csv_to_s3(df, filepath, key):
     obj.put(Body=gz_buffer.getvalue())
     return
 
+def meta_str_to_dict(metadata_str):
+    meta_dict={}
+    dimkey_list=[]
+    freq = '1D'
+    dataloadcache= pd.DataFrame()
+    metadatakey = 'usage_meta.gz'
+    key = 'usage.gz'
+    dataloadcache, metadata_str = rs3.get_data('2_tidy/' + freq + '/', key, metadatakey)
+    print(metadata_str.split('\n'))
+    test = metadata_str.split('\n')
+    for i in test:
+        if len(i.split(","))==2:
+            meta_dict[i.split(",")[0]]=i.split(",")[1]
+
+
+    for k,v in meta_dict.items():
+        if v == 'dim':
+            dimkey_list.append(k)
+
+    print(dimkey_list)
+    return dimkey_list, meta_dict
 
 def main():
     #get_nixtla_data()
@@ -347,7 +367,17 @@ def main():
     ################################################
     # compressing, uncompressing, reading, writing to s3
     #read_model_from_s3('4_fit/1h/', 'Prompt_model.pkl')
-    prep_data_for_s3()
+
+    meta_str_to_dict()
+    #test_faker()
+
+
+def test_faker():
+    fake = Faker()
+    for i in range(0,10):
+        print("_".join([fake.name().split(" ")[0], fake.name().split(" ")[1]])
+              )
+
     #prep_meta_data_for_s3_new()
     #metadatafile = prep_meta_data_for_s3()
     #write_meta_to_s3(metadatafile, '4_fit/1h/', 'tmbmeta.gz')
