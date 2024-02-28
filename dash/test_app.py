@@ -11,7 +11,7 @@ app = Dash(__name__)
 
 # App layout
 app.layout = html.Div([
-    html.Div(children='Tonis App of Data and a Graph'),
+    html.Div(children="UFE Test"),
     dash_table.DataTable(data=df.to_dict('records'), page_size=10),
     dcc.Graph(figure=px.histogram(df, x='continent', y='lifeExp', histfunc='avg'))
     ])
