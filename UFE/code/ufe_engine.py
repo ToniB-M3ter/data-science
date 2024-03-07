@@ -18,11 +18,9 @@ from statsforecast.models import (
     AutoETS, # Automatically selects best ETS model based on AIC
     AutoARIMA, # ARIMA model that automatically select the parameters for given time series with AIC and cross validation
     HoltWinters, #HoltWinters ETS model
-    CrostonClassic as Croston,
-    #GARCH,
-    #MSTL,
-    #OptimizedTheta,
-    #Theta,
+    AutoCES, # Auto Complex Exponential Smoothing
+    MSTL,
+    OptimizedTheta,
     AutoTheta
     )
 from utilsforecast.losses import scaled_crps, mse, rmse
@@ -41,12 +39,12 @@ dataloadcache = None
 
 tidy_folder = '2_tidy/'
 fit_folder = '4_fit/'
-forecast_folder = '5_forecast/'
+forecast_folder = '4_forecast/'
 
 # comment out os.environ lines when running on aws as env variables will be set in lambda config
 os.environ['ORG'] = 'onfido'
-os.environ['FIT_FORECAST'] = 'BOTH'
-os.environ['MODEL_ALIASES'] = 'AutoETS,AutoARIMA,HoltWinters,Croston,SeasonalNaive,Naive,HistoricAverage,AutoTheta'
+os.environ['FIT_FORECAST'] = 'FIT'
+os.environ['MODEL_ALIASES'] = 'AutoETS,AutoARIMA,HoltWinters,,SeasonalNaive,Naive,HistoricAverage,AutoTheta'
 
 # FIT = fit and save fit; then forecast
 # FORECAST = only forecast
@@ -59,7 +57,7 @@ USER=os.getenv('USER')
 ORG=os.getenv('ORG')
 
 def get_keys():
-    metadatakey = 'usage_meta.gz'
+    metadatakey = 'hier_2024_03_04_usage_meta.gz'
     key = 'usage.gz'
     return key, metadatakey
 
@@ -75,24 +73,31 @@ def get_season(data_freq):
 
 def select_models(data_freq: str, model_aliases: list) -> list:
     season=get_season(data_freq)
-    all_models = [
-        AutoETS(model=['Z', 'Z', 'Z'], season_length=season, alias='AutoETS'),
-        AutoARIMA(season_length=season, alias='AutoARIMA'),
-        HoltWinters(),
-        Croston(),
-        SeasonalNaive(season_length=season, alias='SeasonalNaive'),
+    ts_models = [
         Naive(alias='Naive'),
         HistoricAverage(),
+        SeasonalNaive(season_length=season, alias='SeasonalNaive'),
+        MSTL(season_length=[season, season*4]),
+        HoltWinters(season_length=season, error_type="A", alias="HWAdd"),
+        #HoltWinters(season_length=season, error_type="M", alias="HWMult"),
+        AutoETS(model=['Z', 'Z', 'Z'], season_length=season, alias='AutoETS'),
+        AutoCES(season_length=season, alias='AutoCES'),
+        AutoARIMA(season_length=season, alias='AutoARIMA'),
         AutoTheta(season_length=season,
                    decomposition_type="additive",
-                   model="STM")
+                   model="STM"),
+        OptimizedTheta(season_length=season,
+                       decomposition_type="additive", alias="ThetaAdd"),
+        OptimizedTheta(season_length=season,
+                       decomposition_type="multiplicative", alias="ThetaMult")
     ]
 
-    ts_models = []
-    for model in model_aliases:
-        for i in all_models:
-            if model == str(i):
-                ts_models.append(i)
+    #ts_models = []
+
+    # for model in model_aliases:
+    #     for i in all_models:
+    #         if model == str(i):
+    #             ts_models.append(i)
     return ts_models
 
 def only_forecast(df: pd.DataFrame, h, season, freq, ts_models):
@@ -138,10 +143,6 @@ def plot_forecasts(model, df, forecast, model_aliases):
     forecast_plot.savefig(f'/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{ORG}/{plotname}')
     return
 
-def plot(data: pd.DataFrame, account: str, meter: str):
-    #fig = px.line(data, x='tm', y='y', title='Account: {} & Meter: {}'.format(account, meter))
-    #fig.show()
-    pass
 
 def prep_forecast_for_s3(df: pd.DataFrame, df_ids, evals):
     df.reset_index(inplace=True)
@@ -269,7 +270,7 @@ def main(data, freq, dimkey_list, account):
         end_fit=time()
         logger.info(f'Fit Minutes: {(end_fit - init_fit) / 60}')
         rs3.write_model_to_s3(model, fit_folder+freq+'/', model_aliases[0] + '.pkl')
-        forecasts = make_prediction(model, df_to_forecast, h) # Should we only fit here?
+        #forecasts = make_prediction(model, df_to_forecast, h) # Should we only fit here?
     elif FIT_FORECAST == 'FORECAST':
         # Read model from s3
         model = rs3.read_model_from_s3(fit_folder+freq+"/", model_aliases[0]+'.pkl')
@@ -311,8 +312,8 @@ def main(data, freq, dimkey_list, account):
             summary_df.reset_index().columns = ["Model", "Nr. of unique_ids"]
             summary_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/summary_df.csv')
 
-            best_forecasts = postproc.get_best_model_forecast(forecasts, evaluation_df)
-            best_forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/best_forecasts.csv')
+            best_forecast_per_ts = postproc.get_best_model_forecast(forecasts, evaluation_df)
+            best_forecast_per_ts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/best_forecast_per_ts.csv')
 
 
     ##################################
@@ -339,7 +340,7 @@ def main(data, freq, dimkey_list, account):
         rs3.write_gz_csv_to_s3(combined_forecasts, forecast_folder + freq + '/',
                                 'best_' + dt.today().strftime("%Y_%d_%m") + '_' + 'usage.gz')
         rs3.write_meta_to_s3(metadata_str, freq, forecast_folder + freq + '/',
-                              'best_' + dt.today().strftime("%Y_%d_%m") + '_' + 'usage_meta.gz')
+                              'best_' + dt.today().strftime("%Y_%d_%m") + '_' + 'hier_2024_03_04_usage_meta.gz')
 
     else:
         name = model_aliases[0]
@@ -359,8 +360,11 @@ def main(data, freq, dimkey_list, account):
 def lambda_handler(event, context):
     key, metadatakey = get_keys()
     dataloadcache, metadata_str = rs3.get_data(tidy_folder + freq + '/', key, metadatakey)
+    meta_dict = preproc.meta_str_to_dict(metadata_str)
+    dimkey_list = preproc.meta_to_dim_list(meta_dict)
+    rs3.write_meta_tmp(metadata_str)
     data, account = preproc.select_ts(dataloadcache)
-    main(data, freq, metadata_str, account)
+    main(data, freq, metadata_str, account) #TODO feed in dimkey_list to main?
     return
 
 if __name__ == "__main__":
@@ -371,9 +375,12 @@ if __name__ == "__main__":
         if dataloadcache.empty:
             key, metadatakey = get_keys()
             dataloadcache, metadata_str = rs3.get_data(tidy_folder + freq + '/', key, metadatakey)
-        dimkey_list = preproc.meta_str_to_dict(metadata_str)
+        meta_dict = preproc.meta_str_to_dict(metadata_str)
+        dimkey_list = preproc.meta_to_dim_list(meta_dict)
+        rs3.write_meta_tmp(metadata_str)
         data, account = preproc.select_ts(dataloadcache)
-        main(data, freq, dimkey_list, account)
+        main(data, freq, dimkey_list, account)  #TODO feed in dimkey_list to main?
+
         print("Press enter to re-run the script, CTRL-C to exit")
         sys.stdin.readline()
         importlib.reload(rs3)

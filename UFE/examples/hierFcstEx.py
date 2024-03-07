@@ -58,7 +58,7 @@ fit_folder = '4_fit/'
 forecast_folder = '5_forecast/'
 
 def get_keys():
-    metadatakey = 'usage_meta.gz'
+    metadatakey = 'hier_2024_03_04_usage_meta.gz'
     key = 'usage.gz'
     return key, metadatakey
 
@@ -333,7 +333,7 @@ def main(data, freq, metadata_str, account):
     rs3.write_gz_csv_to_s3(hier_forecast, forecast_folder + freq + '/',
                            'hier' + '_' + dt.today().strftime("%Y_%d_%m") + '_' + 'usage.gz')
     rs3.write_meta_to_s3(metadata_str, freq, forecast_folder + freq + '/',
-                         'hier' + '_' + dt.today().strftime("%Y_%d_%m") + '_' + 'usage_meta.gz')
+                         'hier' + '_' + dt.today().strftime("%Y_%d_%m") + '_' + 'hier_2024_03_04_usage_meta.gz')
 
     # Visualise data
     other_plots(S_df, tags, Y_df, Y_hat_df)

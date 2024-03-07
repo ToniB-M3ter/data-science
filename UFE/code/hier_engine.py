@@ -124,7 +124,6 @@ def hier_prep(df: pd.DataFrame, dimkeys, startdate, enddate) -> pd.DataFrame:
     cols.append('org') #['org','meter', 'measure', 'account_cd', 'ts_id', 'tm', 'y']
     df=df[cols]
     df = df.rename(columns={'tm': 'ds'})
-    print(df.tail(10))
     return df, df_ids
 
 def base_forecasts(Y_train_df, data_freq, h):
@@ -133,11 +132,6 @@ def base_forecasts(Y_train_df, data_freq, h):
     fcst = StatsForecast(
         df=Y_train_df,
         models=[AutoETS(season_length=season),
-                #SeasonalNaive(season_length=season)
-                #AutoARIMA(season_length=season),
-                #AutoTheta(season_length=season,
-                #          decomposition_type="additive",
-                #          model="STM")
                 ],
         freq=data_freq,
         n_jobs=-1
@@ -228,6 +222,7 @@ def select_rec_method(Y_rec_df, evaluation):
     evaluation.reset_index(level=1, drop=True, inplace=True)
     evaluation.drop(list(evaluation.filter(regex='-lo')), axis=1, inplace=True)
     evaluation.drop(list(evaluation.filter(regex='-hi')), axis=1, inplace=True)
+    print(evaluation)
     evaluation.loc['mean']=evaluation.mean(numeric_only=True)
     eval_trans = evaluation.T
     print(tabulate(eval_trans, headers='keys', tablefmt='psql'))
@@ -288,12 +283,10 @@ def prep_forecast_for_s3(df_best_rec: pd.DataFrame, tags, df_ids, model_name):
     df_best_rec['tm'] = df_best_rec["ds"].dt.strftime('%Y-%m-%dT%H:%M:%SZ')
     df_best_rec['.model'] = model_name
 
-    hier_frcst = pd.merge(hier_forecast[['unique_id','account_cd', 'account_nm', 'org','meter','measure']],
+    hier_frcst = pd.merge(hier_forecast[['ts_id', 'unique_id','account_cd', 'account_nm', 'org','meter','measure']],
                           df_best_rec[['unique_id', 'tm', 'z0', 'z1', 'z', '.model']], on='unique_id')
-    #hier_frcst = pd.merge(df_best_rec[['unique_id', 'tm', 'z', 'z0', 'z1', '.model']], df_ids, left_on='unique_id', right_on='ts_id')
     hier_frcst.drop("unique_id", axis=1, inplace=True)
-    fin_hier_forcast = hier_frcst[['ts_id', 'account_cd', 'account_nm', 'meter', 'measure', 'tm', 'z', 'z0', 'z1', '.model']]
-    print(tabulate(fin_hier_forcast.tail(), headers='keys', tablefmt='psql'))
+    fin_hier_forcast = hier_frcst[['ts_id', 'meter', 'measure', 'account_nm', 'account_cd', 'tm', 'z', 'z0', 'z1', '.model']]
 
     return fin_hier_forcast
 
@@ -340,16 +333,31 @@ def other_plots(S_df, tags, Y_df, Y_hat_df):
 def forecast_plots(S_df, tags, Y_df, Y_hat_df, Y_rec_df, ser):
     hplot = HierarchicalPlot(S=S_df, tags=tags) # plotting class containing plotting methods
 
+    print(Y_df.columns) #['unique_id', 'ds', 'y']
+    print(Y_rec_df.columns)
+    # ['unique_id', 'ds', 'AutoETS', 'AutoETS-lo-95', 'AutoETS-hi-95',
+    #    'AutoETS/BottomUp', 'AutoETS/BottomUp-lo-95', 'AutoETS/BottomUp-hi-95',
+    #    'AutoETS/MinTrace_method-ols_nonnegative-True',
+    #    'AutoETS/MinTrace_method-ols_nonnegative-True-lo-95',
+    #    'AutoETS/MinTrace_method-ols_nonnegative-True-hi-95',
+    #    'AutoETS/MinTrace_method-wls_var_nonnegative-True',
+    #    'AutoETS/MinTrace_method-wls_var_nonnegative-True-lo-95',
+    #    'AutoETS/MinTrace_method-wls_var_nonnegative-True-hi-95',
+    #    'AutoETS/MinTrace_method-mint_shrink_nonnegative-True_mint_shr_ridge-2e-05',
+    #    'AutoETS/MinTrace_method-mint_shrink_nonnegative-True_mint_shr_ridge-2e-05-lo-95',
+    #    'AutoETS/MinTrace_method-mint_shrink_nonnegative-True_mint_shr_ridge-2e-05-hi-95']
+
     cols = Y_rec_df.columns
     recs = [item for item in cols if '-lo' not in item]
-    recs = [item for item in cols if '-hi' not in item]
-    recs = [item for item in cols if '-index' not in item]
-    recs = [item for item in cols if '-sample' not in item]
+    recs = [item for item in recs if '-hi' not in item]
+    recs = [item for item in recs if '-index' not in item]
+    recs = [item for item in recs if '-sample' not in item]
 
     plot_df = pd.concat([Y_df.set_index(['unique_id', 'ds']),
-                         Y_rec_df.set_index('ds', append=True)], axis=1)
+                         Y_rec_df.set_index('unique_id', 'ds', append=True)], axis=1)
     plot_df = plot_df.reset_index('ds')
 
+    print('plot_df')
     print(plot_df.tail())
 
     hplot.plot_series(
@@ -358,7 +366,7 @@ def forecast_plots(S_df, tags, Y_df, Y_hat_df, Y_rec_df, ser):
         models=recs.append('y'),
         level=[95]
     )
-    plt.xticks(rotation=90)
+    plt.xticks(rotation=45)
     plt.show()
     return
 
@@ -403,36 +411,45 @@ def main(data, freq, dimkeys_list, account):
         Y_fitted_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/Y_fitted_df.csv')
 
     # Reconcile
+    init_fit = time()
     Y_rec_df = reconcile_forecasts(Y_hat_df, Y_fitted_df, Y_train_df, S_df, tags)
     Y_rec_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/Y_rec_df.csv')
     rs3.write_csv_log_to_S3(Y_rec_df, 'reconciled_forecasts')
+    end_fit = time()
+    print(f'Reconcile Minutes: {(end_fit - init_fit) / 60}')
 
     # Evaluate
+    init_fit = time()
     evaluation = evaluate_forecasts(Y_df, Y_rec_df, Y_test_df, Y_train_df, tags)
     evaluation.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/evaluation.csv')
     # And select best rconciliation method
     best_rec_meth, Y_best_rec_df=select_rec_method(Y_rec_df, evaluation)
     Y_best_rec_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/Y_best_rec_df.csv')
+    end_fit = time()
+    print(f'Evaluate Minutes: {(end_fit - init_fit) / 60}')
 
     # Prep for save
     hier_forecast=prep_forecast_for_s3(Y_best_rec_df, S_df.index, df_ids, best_rec_meth)
-    if USER is None:
+    #if USER is None:
+    if 2>1 :
+        hier_forecast.to_csv(
+            f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/hier_forecast.csv')
         rs3.write_gz_csv_to_s3(hier_forecast, forecast_folder + freq + '/',
-                               'hier' + '_' + dt.today().strftime("%Y_%d_%m") + '_' + 'usage.gz')
+                               'hier' + '_' + dt.today().strftime("%Y_%m_%d") + '_' + 'usage.gz')
         rs3.write_meta_to_s3(metadata_str, freq, forecast_folder + freq + '/',
-                             'hier' + '_' + dt.today().strftime("%Y_%d_%m") + '_' + 'usage_meta.gz')
+                             'hier' + '_' + dt.today().strftime("%Y_%m_%d") + '_' + 'usage_meta.gz')
     else:
         hier_forecast.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/{ORG}/hier_forecast.csv')
 
     # Visualise data
     #other_plots(S_df, tags, Y_df, Y_hat_df)
     cnt = 0
-    while cnt < 20:
+    while cnt < 2:
         ser = input("which series? ")
         if not ser:
             pass
         else:
-            forecast_plots(S_df, tags, Y_df, Y_hat_df, Y_rec_df, ser)
+            forecast_plots(S_df, tags, Y_df, Y_hat_df, Y_best_rec_df, ser)
             pass
         cnt = cnt+1
 
@@ -443,6 +460,12 @@ if __name__ == "__main__":
 
     key, metadatakey = get_keys()
     dataloadcache, metadata_str = rs3.get_data('2_tidy/' + freq + '/', key, metadatakey)
-    dimkey_list = preproc.meta_str_to_dict(metadata_str)
+
+    # handle metadata
+    meta_dict = preproc.meta_str_to_dict(metadata_str) # read in metadata
+    dimkey_list = preproc.meta_to_dim_list(meta_dict) # extract dimensions from metadata
+    preproc.meta_dict_to_tmp_txt_file(meta_dict) # add new dimensions for forecasts and write to temp file ?? TODO should this be move to after forecasts have been created?
+
     data, account = preproc.select_ts(dataloadcache)
+
     main(data, freq, dimkey_list, account)

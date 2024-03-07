@@ -1,7 +1,7 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
-import os
+import os, shutil, gzip
 import pandas as pd
 import numpy as np
 import sklearn
@@ -21,18 +21,41 @@ logger = logging.getLogger('ts_engine.pre-process')
 
 def meta_str_to_dict(metadata_str):
     meta_dict={}
-    dimkey_list=[]
-
     meta_tmp = metadata_str.split('\n')
     for i in meta_tmp:
         if len(i.split(","))==2:
             meta_dict[i.split(",")[0]]=i.split(",")[1]
+    return meta_dict
 
+def meta_to_dim_list(meta_dict):
+    dimkey_list = []
     for k,v in meta_dict.items():
         if v == 'dim':
             dimkey_list.append(k)
-
     return dimkey_list
+
+def meta_dict_to_tmp_txt_file(meta_dict):
+    if 'z' not in meta_dict.keys(): # if the forecasts keys are not in dictionary add them
+        meta_dict['z']= 'measure'
+        meta_dict['z0'] = 'measure'
+        meta_dict['z1'] = 'measure'
+
+    #f_meta = open('/Users/tmb/PycharmProjects/data-science/UFE/data/meta_to_txt_file.txt', "w")
+    f_meta = open('tmp/meta_txt_file.txt', "w")
+    f_meta.write("\n")
+    for k in meta_dict.keys():
+        f_meta.write("{}, {}\n".format(k, meta_dict[k]))
+    f_meta.close()
+
+    convert_text_to_zip() # convert tmp file to .gz for loading to s3
+    return
+
+def convert_text_to_zip():
+    with open("/tmp/{}".format('meta_txt_file.txt'), 'rb') as f_in: # probably can stay hardcoded as its a temp file
+        with gzip.open("/tmp/{}".format('meta_txt_file.gz'), 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+            #f.write(content.encode("utf-8"))
+    return
 
 def split_data(Y_df: pd.DataFrame, train_splt: float):
     h = round(Y_df['ds'].nunique() * train_splt)  # forecast horizon
@@ -143,20 +166,12 @@ def clean_data(raw_df: pd.DataFrame, datetime_col: str, y: str, startdate, endda
     else:
         df_ids.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/df_ids.csv')
 
-    # format for fitting and forecasting - select subset of columns and add unique_id column
-    #df.loc[:,'unique_id'] = df.apply(
-     #   lambda row: row.account_cd + '%' + row.meter + '%' + row.measure.split(' ')[0], axis=1)
-
     df['unique_id'] = df['ts_id']
     df = df[[datetime_col, y, 'unique_id']]
     df.columns = ['ds', 'y', 'unique_id']
 
     # Tell user number of time series
     logger.info(str(df['unique_id'].nunique()) + ' Unique Time Series')
-
-    # plot for inspection
-    #x = StatsForecast.plot(df)
-    #x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}'.format('ts_eng_input_data'))
 
     return df, df_ids
 
@@ -173,8 +188,10 @@ def filter_data(df: pd.DataFrame, zero_threshold: float, groupby_fields: list):
 
     df_naive = df[~df['ts_id'].isin(df_to_forecast['ts_id'])]
 
-    logger.info(str(len(df) - len(df_to_forecast)) + ' time series will be forecast with naive model out of ' + str(len(df)))
-    print(str(len(df) - len(df_to_forecast)) + ' time series will be forecast with naive model out of ' + str(len(df)))
+    logger.info(str( df['ts_id'].nunique() - df_to_forecast['ts_id'].nunique() ) + ' time series will be forecast with naive model out of ' + str(df['ts_id'].nunique()))
+    print(str
+          (df['ts_id'].nunique() - df_to_forecast['ts_id'].nunique()) + ' time series will be forecast with naive model out of ' + str(df['ts_id'].nunique())
+          )
     return df_to_forecast, df_naive
 
 def add_noise(Y_df):

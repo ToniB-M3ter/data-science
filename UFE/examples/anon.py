@@ -4,7 +4,7 @@ from faker import Faker
 import readWriteS3 as rs3
 
 def get_keys():
-    metadatakey = 'usage_meta.gz'
+    metadatakey = 'hier_2024_03_04_usage_meta.gz'
     key = 'usage.gz'
     return key, metadatakey
 

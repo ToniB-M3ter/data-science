@@ -335,7 +335,7 @@ def meta_str_to_dict(metadata_str):
     dimkey_list=[]
     freq = '1D'
     dataloadcache= pd.DataFrame()
-    metadatakey = 'usage_meta.gz'
+    metadatakey = 'hier_2024_03_04_usage_meta.gz'
     key = 'usage.gz'
     dataloadcache, metadata_str = rs3.get_data('2_tidy/' + freq + '/', key, metadatakey)
     print(metadata_str.split('\n'))

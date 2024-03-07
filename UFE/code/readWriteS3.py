@@ -1,9 +1,13 @@
 import gzip, csv, os
 import pandas as pd
 import pickle
+import shutil
 import boto3
 from io import StringIO, BytesIO, TextIOWrapper
 from botocore.exceptions import ClientError
+
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.max_rows', 25)
 
 # Remove line and let boto3 find the role and set up default session when releasing
 boto3.setup_default_session(profile_name='ml-labs-prod') #ml-alpha-admin ml-labs-prod    ml-alpha-admin
@@ -24,7 +28,7 @@ s3client = boto3.client("s3")
 
 def datapath(freq):
     filepath = '2_tidy/' + freq  # allow selection of data
-    metakey = 'usage_meta.gz'
+    metakey = 'hier_2024_03_04_usage_meta.gz'
     key = 'usage.gz'
     return filepath, metakey, key
 
@@ -56,9 +60,9 @@ def get_data(filepath, key, metadatakey):
     usage_str = read_from_S3(filepath, key)
     df = pd.read_csv(StringIO(usage_str))
     df.columns=headers
-    df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%dT%H:%M:%SZ')
+    df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%dT%H:%M:%SZ' )
     df=df.sort_values('tm', ascending=True)
-    df.dropna(subset=['y'], inplace = True) # need to generalise this
+    #df.dropna(subset=['y'], inplace = True) # need to generalise this
     return df, metadata_str
 
 def get_data_local():
@@ -97,34 +101,43 @@ def write_csv_log_to_S3(df, data_name):
     s3clt.upload_file(LAMBDA_LOCAL_TMP_FILE, DATABUCKET, OBJECT_NAME)
     return
 
+def write_meta_tmp(fileName):
+    """write meta data to file to be uploaded to s3"""
+    with open('/tmp/{}.txt'.format(fileName), 'rb') as f_in:
+        with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/data/hier_2024_03_06_usage_meta.gz', 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    return
+
 def write_meta_to_s3(metadata_str, freq, filepath, key):
     metadata_byte = metadata_str.encode()
 
     meta_bytes_daily = \
     b"""nm, typ
+    ts_id,  ts_id
+    account_cd, dim
+    account_nm, dim
     meter, dim
     measure, dim
-    account_nm, dim
-    account_cd, dim
-    .model, dim
-    z, measure 
     tm, time 
-    _intrvl, 1D
+    z, measure 
     z0, measure
-    z1, measure"""
+    z1, measure
+    .model, dim
+    _intrvl, 1D"""
 
     meta_bytes_hourly = \
         b"""nm, typ
+        ts_id,  ts_id
+        account_cd, dim
+        account_nm, dim
         meter, dim
         measure, dim
-        account_nm, dim
-        account_cd, dim
-        .model, dim
-        z, measure 
         tm, time 
-        _intrvl, 1D
+        z, measure 
         z0, measure
-        z1, measure"""
+        z1, measure
+        .model, dim
+        _intrvl, 1h"""
 
     if freq == '1h':
         with gzip.open('/tmp/tmpmeta.txt.gz', 'wb') as f:
@@ -138,7 +151,7 @@ def write_meta_to_s3(metadata_str, freq, filepath, key):
     with gzip.open('/tmp/tmpmeta.txt.gz', 'rb') as f:
         # obj = s3.Object(DATABUCKET, filepath + key)
         # obj.put(Body=f)
-        s3client.put_object(Bucket=DATABUCKET, Body=f, Key=filepath + key)
+        s3client.put_object(Bucket=DATABUCKET, Body=f, Key=filepath + key, ContentType='text/plain', ContentEncoding='gzip')
     return
 
 def write_gz_csv_to_s3(df, filepath, key):
