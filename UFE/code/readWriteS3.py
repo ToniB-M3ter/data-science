@@ -3,6 +3,7 @@ import pandas as pd
 import pickle
 import shutil
 import boto3
+from datetime import datetime as dt
 from io import StringIO, BytesIO, TextIOWrapper
 from botocore.exceptions import ClientError
 
@@ -28,7 +29,7 @@ s3client = boto3.client("s3")
 
 def datapath(freq):
     filepath = '2_tidy/' + freq  # allow selection of data
-    metakey = 'hier_2024_03_04_usage_meta.gz'
+    metakey = 'usage_meta.gz'
     key = 'usage.gz'
     return filepath, metakey, key
 
@@ -101,12 +102,51 @@ def write_csv_log_to_S3(df, data_name):
     s3clt.upload_file(LAMBDA_LOCAL_TMP_FILE, DATABUCKET, OBJECT_NAME)
     return
 
-def write_meta_tmp(fileName):
-    """write meta data to file to be uploaded to s3"""
-    with open('/tmp/{}.txt'.format(fileName), 'rb') as f_in:
-        with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/data/hier_2024_03_06_usage_meta.gz', 'wb') as f_out:
+
+def write_dict_to_textfile(metaDict=None):
+    storedFileNameBase = "best_usage_meta".format(dt.today().strftime("%Y_%d_%m"))
+    storedFileName = "{}".format(dt.today().strftime("%Y_%d_%m"))+'_'+storedFileNameBase+'.txt'
+    output = open("/tmp/" + storedFileName, "w")
+    if metaDict:
+        pass
+    else:
+        metaDict = {'nm,':'type',
+                    'ts_id': 'ts_id',
+                    'account_cd': 'dim',
+                    'account_nm': 'dim',
+                    'meter': 'dim',
+                    'measure': 'dim',
+                    'tm': 'time',
+                    'z': 'measure',
+                    'z0': 'measure',
+                    'z1': 'measure',
+                    '.model': 'dim',
+                    '_intrvl': '1D'}
+    #json.dump(testDict, open('/tmp/test.txt', 'w'))
+    for k,v in metaDict.items():
+        output.writelines(f'{k} {v}\n')
+    return storedFileNameBase
+
+def write_meta_tmp(storedFileNameBase):
+    storedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.txt'
+    savedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.gz'
+    with open("/tmp/{}".format(storedFileName), 'rb') as f_in:
+        with gzip.open("/tmp/{}".format(savedFileName), 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
+            #f.write(content.encode("utf-8"))
     return
+
+def gz_upload(storedFileNameBase, filepath):
+    #fileName = 'hier_2024_03_18_usage_meta.gz'
+    savedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.gz'
+    with open("/tmp/{}".format(savedFileName), 'rb') as f_in:
+        gzipped_content = gzip.compress(f_in.read())
+        s3client.upload_fileobj(
+            BytesIO(gzipped_content),
+            DATABUCKET,
+            filepath+savedFileName,
+            ExtraArgs={"ContentType":"text/plain", "ContentEncoding":"gzip"}
+        )
 
 def write_meta_to_s3(metadata_str, freq, filepath, key):
     metadata_byte = metadata_str.encode()

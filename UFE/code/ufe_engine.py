@@ -43,8 +43,8 @@ forecast_folder = '4_forecast/'
 
 # comment out os.environ lines when running on aws as env variables will be set in lambda config
 os.environ['ORG'] = 'onfido'
-os.environ['FIT_FORECAST'] = 'FIT'
-os.environ['MODEL_ALIASES'] = 'AutoETS,AutoARIMA,HoltWinters,,SeasonalNaive,Naive,HistoricAverage,AutoTheta'
+os.environ['FIT_FORECAST'] = 'BOTH'
+os.environ['MODEL_ALIASES'] = 'AutoETS,AutoARIMA,HoltWinters,SeasonalNaive,Naive,HistoricAverage,AutoTheta'
 
 # FIT = fit and save fit; then forecast
 # FORECAST = only forecast
@@ -57,7 +57,7 @@ USER=os.getenv('USER')
 ORG=os.getenv('ORG')
 
 def get_keys():
-    metadatakey = 'hier_2024_03_04_usage_meta.gz'
+    metadatakey = 'usage_meta.gz'
     key = 'usage.gz'
     return key, metadatakey
 
@@ -71,11 +71,11 @@ def get_season(data_freq):
 
     return season
 
-def select_models(data_freq: str, model_aliases: list) -> list:
+def select_models(data_freq: str, model_aliases: list) -> list:  #'AutoETS,AutoARIMA,HoltWinters,SeasonalNaive,Naive,HistoricAverage,AutoTheta'
     season=get_season(data_freq)
     ts_models = [
         Naive(alias='Naive'),
-        HistoricAverage(),
+        #HistoricAverage(),
         SeasonalNaive(season_length=season, alias='SeasonalNaive'),
         MSTL(season_length=[season, season*4]),
         HoltWinters(season_length=season, error_type="A", alias="HWAdd"),
@@ -83,13 +83,9 @@ def select_models(data_freq: str, model_aliases: list) -> list:
         AutoETS(model=['Z', 'Z', 'Z'], season_length=season, alias='AutoETS'),
         AutoCES(season_length=season, alias='AutoCES'),
         AutoARIMA(season_length=season, alias='AutoARIMA'),
-        AutoTheta(season_length=season,
-                   decomposition_type="additive",
-                   model="STM"),
-        OptimizedTheta(season_length=season,
-                       decomposition_type="additive", alias="ThetaAdd"),
-        OptimizedTheta(season_length=season,
-                       decomposition_type="multiplicative", alias="ThetaMult")
+        AutoTheta(season_length=season,decomposition_type="additive",model="STM"),
+        #OptimizedTheta(season_length=season, decomposition_type="additive", alias="ThetaAdd"),
+        #OptimizedTheta(season_length=season, decomposition_type="multiplicative", alias="ThetaMult")
     ]
 
     #ts_models = []
@@ -100,7 +96,7 @@ def select_models(data_freq: str, model_aliases: list) -> list:
     #             ts_models.append(i)
     return ts_models
 
-def only_forecast(df: pd.DataFrame, h, season, freq, ts_models):
+def fit_forecast(df: pd.DataFrame, h, season, freq, ts_models):
     # create the model object, for each model and let user know time required for each fit
     model = StatsForecast(
         df = df,
@@ -144,9 +140,9 @@ def plot_forecasts(model, df, forecast, model_aliases):
     return
 
 
-def prep_forecast_for_s3(df: pd.DataFrame, df_ids, evals):
+def prep_forecast_for_s3(df: pd.DataFrame, df_ids, evaluation_df ):
     df.reset_index(inplace=True)
-    evals.reset_index(inplace=True)
+    evaluation_df.reset_index(inplace=True)
 
     dashboard_cols = [
         'tm'  # timestamp
@@ -168,7 +164,7 @@ def prep_forecast_for_s3(df: pd.DataFrame, df_ids, evals):
     # df.columns ['unique_id', 'ds', 'best_model', 'best_model-hi-95','best_model-lo-95']
     # df_ids.columns ['account_cd', 'account_nm', 'meter', 'measure', 'ts_id']
 
-    df = pd.merge(df, evals[['unique_id', 'best_model']], how='left', on='unique_id')
+    df = pd.merge(df, evaluation_df[['unique_id', 'best_model']], how='left', on='unique_id')
     df_ids.columns = ['account_cd', 'account_nm', 'meter', 'measure', 'unique_id']
     df = pd.merge(df, df_ids, how='left', on='unique_id')
     df.rename(columns={'unique_id': 'ts_id', 'best_model_y': '.model'}, inplace=True)
@@ -181,8 +177,6 @@ def prep_forecast_for_s3(df: pd.DataFrame, df_ids, evals):
     # df = df[df.columns.intersection(df_cols)]
 
     df.sort_values(['account_cd', 'meter', 'ds'], inplace=True)
-
-    print(df.tail(10))
 
     # dfs = []
     # for alias in model_aliases:
@@ -203,6 +197,7 @@ def prep_forecast_for_s3(df: pd.DataFrame, df_ids, evals):
     else:
         df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/dfBest.csv')
     return df
+
 
 def prep_meta_data_for_s3():
     # TODO change meta as dictionary passed parameter to function
@@ -234,7 +229,8 @@ def main(data, freq, dimkey_list, account):
     # get parameters and models
     season = get_season(freq)
     h = round(dfUsage_clean['ds'].nunique() * 0.15) # forecast horizon
-    #df_to_forecast, df_naive = ppreprocp.filter_data(dfUsage_clean)  # TMB testing
+    print(dimkey_list)
+    #df_to_forecast, df_naive = preproc.filter_data(dfUsage_clean, 0.90)
     df_naive = pd.DataFrame()                                  # TMB testing
     df_to_forecast = dfUsage_clean                             # TMB testing
 
@@ -255,7 +251,7 @@ def main(data, freq, dimkey_list, account):
 
     naive_init_fit = time()
     if len(df_naive) > 0:
-        forecast_naive, naive_model = only_forecast(df_naive, h, season, freq, ts_naive_model)
+        forecast_naive, naive_model = fit_forecast(df_naive, h, season, freq, ts_naive_model)
         # plot_forecasts(naive_model, dfUsage_clean, forecast_only_naive, naive_model_aliases)
     naive_end_fit = time()
     logger.info(f'Naive Fit Minutes: {(naive_end_fit - naive_init_fit) / 60}')
@@ -269,11 +265,13 @@ def main(data, freq, dimkey_list, account):
         model = fit(df_to_forecast, h, season, freq, ts_models)
         end_fit=time()
         logger.info(f'Fit Minutes: {(end_fit - init_fit) / 60}')
-        rs3.write_model_to_s3(model, fit_folder+freq+'/', model_aliases[0] + '.pkl')
+        #rs3.write_model_to_s3(model, fit_folder+freq+'/', model_aliases[0] + '.pkl')
+        rs3.write_model_to_s3(model, fit_folder + freq + '/', ts_models + '.pkl')
         #forecasts = make_prediction(model, df_to_forecast, h) # Should we only fit here?
     elif FIT_FORECAST == 'FORECAST':
         # Read model from s3
-        model = rs3.read_model_from_s3(fit_folder+freq+"/", model_aliases[0]+'.pkl')
+        #model = rs3.read_model_from_s3(fit_folder+freq+"/", model_aliases[0]+'.pkl')
+        model = rs3.read_model_from_s3(fit_folder + freq + "/", ts_models + '.pkl')
         init_predict = time()
         forecasts = make_prediction(model, df_to_forecast, h)
         end_predict = time()
@@ -282,7 +280,7 @@ def main(data, freq, dimkey_list, account):
         if len(df_to_forecast)>0:
             logger.info(f'Start Fit Minutes: {naive_init_fit}')
             init_foreonly = time()
-            forecasts, model = only_forecast(df_to_forecast, h, season, freq, ts_models)
+            forecasts, model = fit_forecast(df_to_forecast, h, season, freq, ts_models)
             end_foreonly = time()
             logger.info(f'Forecast Only Minutes:  + {(end_foreonly - init_foreonly) / 60}')
 
@@ -293,9 +291,6 @@ def main(data, freq, dimkey_list, account):
         # plot and analyse
         #plot_forecasts(model, dfUsage_clean, forecast_only, model_aliases)
 
-        ids = ['c82f6cc26578128fe40e32e657ef5dbdc5bffb300122292619d4f15c4bde508f'
-            , '3a2b5a0934b8f866ab36c8818313c90722eb0e6ca38e5103ebaf3e6c70762f01'
-            ,'07ba99e5b1dd640d4d9f8d3a914a7af5f0e64710c5668a2b37be6d8e4b20cda5']
 
         # cross validate
         if USER is None:
@@ -303,7 +298,11 @@ def main(data, freq, dimkey_list, account):
             #cv_rmse_df = err.cross_validate(dfUsage_clean, model, h)
             #rs3.write_csv_log_to_S3(cv_rmse_df, 'cv_rmse_df')
         else:
-            crossvalidation_df = postproc.cross_validate_simple(dfUsage_clean, model, h)
+            init_xval = time()
+            crossvalidation_df = postproc.cross_validate_simple(df_to_forecast, model, h)
+            end_xval = time()
+            logger.info(f'Cross Validation Minutes:  + {(end_xval - init_xval) / 60}')
+
             crossvalidation_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/cv_rmse_df.csv')
             evaluation_df = postproc.evaluate_cross_validation(crossvalidation_df, rmse)
             evaluation_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/evaluation_df.csv')
@@ -312,21 +311,19 @@ def main(data, freq, dimkey_list, account):
             summary_df.reset_index().columns = ["Model", "Nr. of unique_ids"]
             summary_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/summary_df.csv')
 
-            best_forecast_per_ts = postproc.get_best_model_forecast(forecasts, evaluation_df)
-            best_forecast_per_ts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/best_forecast_per_ts.csv')
+            best_forecasts = postproc.get_best_model_forecast(forecasts, evaluation_df)
+            best_forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/best_forecasts.csv')
 
 
     ##################################
     # save to s3 if directed #########
     ##################################
     #if USER is None:
-    if 2>1:
-        # metadatafile = prep_meta_data_for_s3() TODO remove or prep fields for saving
+    if 1==1:
 
         # Naive forecasts
         if len(df_naive)>0:
-            naive_forecast_to_save = prep_forecast_for_s3(forecast_naive, df_ids, naive_model_alias)
-
+            naive_forecast_to_save = prep_forecast_for_s3(forecast_naive, df_ids, evaluation_df)
         else:
             naive_forecast_to_save = pd.DataFrame()
 
@@ -336,11 +333,15 @@ def main(data, freq, dimkey_list, account):
         else:
             forecast_to_save = pd.DataFrame()
 
+
         combined_forecasts = pd.concat([naive_forecast_to_save,forecast_to_save], ignore_index=True)
         rs3.write_gz_csv_to_s3(combined_forecasts, forecast_folder + freq + '/',
                                 'best_' + dt.today().strftime("%Y_%d_%m") + '_' + 'usage.gz')
-        rs3.write_meta_to_s3(metadata_str, freq, forecast_folder + freq + '/',
-                              'best_' + dt.today().strftime("%Y_%d_%m") + '_' + 'hier_2024_03_04_usage_meta.gz')
+        storedFileNameBase=rs3.write_dict_to_textfile() # pass metaDict if created, e.g. metadata_str
+        rs3.write_meta_tmp(storedFileNameBase)
+        rs3.gz_upload(storedFileNameBase, forecast_folder + freq + '/')
+
+        #rs3.write_meta_to_s3(metadata_str, freq, forecast_folder + freq + '/', 'best_' + dt.today().strftime("%Y_%d_%m") + '_' + 'hier_2024_03_04_usage_meta.gz')
 
     else:
         name = model_aliases[0]
@@ -377,9 +378,9 @@ if __name__ == "__main__":
             dataloadcache, metadata_str = rs3.get_data(tidy_folder + freq + '/', key, metadatakey)
         meta_dict = preproc.meta_str_to_dict(metadata_str)
         dimkey_list = preproc.meta_to_dim_list(meta_dict)
-        rs3.write_meta_tmp(metadata_str)
+        rs3.write_dict_to_textfile() #TODO convert metadat_str to dict and pass to fxn
         data, account = preproc.select_ts(dataloadcache)
-        main(data, freq, dimkey_list, account)  #TODO feed in dimkey_list to main?
+        main(data, freq, dimkey_list, account)
 
         print("Press enter to re-run the script, CTRL-C to exit")
         sys.stdin.readline()
