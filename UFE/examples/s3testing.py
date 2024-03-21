@@ -1,14 +1,17 @@
 import csv
 import os
+import json
 from pandas import util
 import gzip
 import shutil
 import boto3
+from datetime import datetime as dt
 from tempfile import TemporaryFile
 from io import BytesIO, StringIO, TextIOWrapper
 import pandas as pd
 
-os.environ['DATABUCKET'] = 'm3ter-usage-forecasting-poc-demo-332767697772-us-east-1' #'m3ter-usage-forecasting-poc-onfido-332767697772-us-east-1'
+os.environ['DATABUCKET'] = 'm3ter-usage-forecasting-poc-onfido-332767697772-us-east-1'
+#'m3ter-usage-forecasting-poc-demo-332767697772-us-east-1' #'m3ter-usage-forecasting-poc-onfido-332767697772-us-east-1'
 os.environ['UPLOADBUCKET'] = 'tmbbucket'
 global DATABUCKET
 global UPLOADBUCKET
@@ -146,35 +149,57 @@ def get_data(filepath, metadatakey):
     print(metadata_str)
     return metadata_str
 
-def convert_text_to_zip(storedFileName, savedFileName):
-    s3 = boto3.resource('s3')
-    with open("/Users/tmb/PycharmProjects/data-science/UFE/data/{}".format(storedFileName), 'rb') as f_in:
-        with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/data/savedFileName', 'wb') as f_out:
+def write_dict_to_textfile(metaDict=None):
+    storedFileNameBase = "best_usage_meta".format(dt.today().strftime("%Y_%d_%m"))
+    storedFileName = "{}".format(dt.today().strftime("%Y_%d_%m"))+'_'+storedFileNameBase+'.txt'
+    output = open("/tmp/" + storedFileName, "w")
+    if metaDict:
+        pass
+    else:
+        metaDict = {'nm,':'type',
+                    'ts_id': 'ts_id',
+                    'account_cd': 'dim',
+                    'account_nm': 'dim',
+                    'meter': 'dim',
+                    'measure': 'dim',
+                    'tm': 'time',
+                    'z': 'measure',
+                    'z0': 'measure',
+                    'z1': 'measure',
+                    '.model': 'dim',
+                    '_intrvl': '1D'}
+    #json.dump(testDict, open('/tmp/test.txt', 'w'))
+    for k,v in metaDict.items():
+        output.writelines(f'{k} {v}\n')
+    return storedFileNameBase
+
+def write_meta_tmp(storedFileNameBase):
+    storedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.txt'
+    savedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.gz'
+    with open("/tmp/{}".format(storedFileName), 'rb') as f_in:
+        with gzip.open("/tmp/{}".format(savedFileName), 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
             #f.write(content.encode("utf-8"))
     return
 
-
-def gzload():
-    s3 = boto3.client("s3")
-    bucket = 'm3ter-usage-forecasting-poc-demo-332767697772-us-east-1'
-    fileName = 'hier_2024_03_06_usage_meta.gz'
-    with open("/Users/tmb/PycharmProjects/data-science/UFE/data/{}".format(fileName), 'rb') as f_in:
+def gz_upload(storedFileNameBase, filepath):
+    #fileName = 'hier_2024_03_18_usage_meta.gz'
+    savedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.gz'
+    with open("/tmp/{}".format(savedFileName), 'rb') as f_in:
         gzipped_content = gzip.compress(f_in.read())
-        s3.upload_fileobj(
+        s3client.upload_fileobj(
             BytesIO(gzipped_content),
-            bucket,
-            fileName,
+            DATABUCKET,
+            filepath+savedFileName,
             ExtraArgs={"ContentType":"text/plain", "ContentEncoding":"gzip"}
         )
-
 
 def read_textfile(bucket):
     original=BytesIO(b'tmbtesting some stuff here')
     original.seek(0)
     upload_gzip(bucket,'tmbmetatest.txt',original)
 
-    with open("/Users/tmb/PycharmProjects/data-science/UFE/data/hier_2024_03_04_usage_meta.txt", "r") as fp, TemporaryFile() as helper_fp:
+    with open("/Users/tmb/PycharmProjects/data-science/UFE/data/hier_2024_03_06_usage_meta.txt", "r") as fp, TemporaryFile() as helper_fp:
         #bio = BytesIO(fp.read().encode('utf-8'))
         upload_gzip(bucket,'tmbmetatest.txt',fp, compressed_fp=helper_fp)
     return
@@ -199,7 +224,7 @@ def write_meta_to_s3(metadata_str, filepath, key):
     metadata_byte = metadata_str.encode()
     print(type(metadata_byte))
     with open('/Users/tmb/PycharmProjects/data-science/UFE/data/hier_2024_03_04_usage_meta.txt', 'rb') as f_in:
-        with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/data/hier_2024_03_06_usage_meta.gz', 'wb') as f_out:
+        with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/data/hier_2024_03_18_usage_meta.gz', 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
 
     #with gzip.open('/tmp/tmpmeta.txt.gz', 'wb') as f:
@@ -219,11 +244,11 @@ def main():
     #df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/engine_p.csv')
     #upload_dataframe_in_memory(df, 'tmbbucket', 'csv_upload.gz')
     #example2(bucket, filepath + key)
-    storedFileName = 'hier_2024_03_06_usage_meta.txt'
-    saveFileName = 'hier_2024_03_06_usage_meta.gz'
-    convert_text_to_zip(storedFileName, saveFileName)
-    #gzload()
-    get_data('config' + '/', 'hier_2024_03_06_usage_meta.gz')
+
+    storedFileNameBase = write_dict_to_textfile()  # pass metaDict if created, e.g. metadata_str
+    write_meta_tmp(storedFileNameBase)
+    gz_upload(storedFileNameBase, '4_forecast/1D/')
+    #get_data('config' + '/', 'hier_2024_03_18_usage_meta.gz')
     return
 
 if __name__ == "__main__":

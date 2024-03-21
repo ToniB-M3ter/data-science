@@ -115,7 +115,7 @@ def cross_validate_simple(Y_df, model, h):
         df=Y_df,
         h=h,
         step_size=h,
-        n_windows=4  # TODO make no of windows configurable
+        n_windows=3
     )
     return crossvalidation_df
 
@@ -157,7 +157,6 @@ def cross_validate(Y_df, model, h):
 
         crossvalidation_df.rename(columns={'y': 'actual'}, inplace=True)  # rename actual values
         cvs.append(crossvalidation_df.copy())
-        print(crossvalidation_df.columns)
 
         cutoff = crossvalidation_df['cutoff'].unique()
         for k in range(len(cutoff)):

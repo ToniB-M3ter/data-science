@@ -459,7 +459,8 @@ if __name__ == "__main__":
     dataloadcache= pd.DataFrame()
 
     key, metadatakey = get_keys()
-    dataloadcache, metadata_str = rs3.get_data('2_tidy/' + freq + '/', key, metadatakey)
+    metadata_str, cols = rs3.get_metadata(tidy_folder + freq + '/', metadatakey)
+    dataloadcache = rs3.get_data(tidy_folder + freq + '/', key, cols)
 
     # handle metadata
     meta_dict = preproc.meta_str_to_dict(metadata_str) # read in metadata

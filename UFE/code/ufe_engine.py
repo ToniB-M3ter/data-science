@@ -79,7 +79,7 @@ def select_models(data_freq: str, model_aliases: list) -> list:  #'AutoETS,AutoA
         SeasonalNaive(season_length=season, alias='SeasonalNaive'),
         MSTL(season_length=[season, season*4]),
         HoltWinters(season_length=season, error_type="A", alias="HWAdd"),
-        #HoltWinters(season_length=season, error_type="M", alias="HWMult"),
+        HoltWinters(season_length=season, error_type="M", alias="HWMult"),
         AutoETS(model=['Z', 'Z', 'Z'], season_length=season, alias='AutoETS'),
         AutoCES(season_length=season, alias='AutoCES'),
         AutoARIMA(season_length=season, alias='AutoARIMA'),
@@ -229,10 +229,9 @@ def main(data, freq, dimkey_list, account):
     # get parameters and models
     season = get_season(freq)
     h = round(dfUsage_clean['ds'].nunique() * 0.15) # forecast horizon
-    print(dimkey_list)
-    #df_to_forecast, df_naive = preproc.filter_data(dfUsage_clean, 0.90)
-    df_naive = pd.DataFrame()                                  # TMB testing
-    df_to_forecast = dfUsage_clean                             # TMB testing
+    df_to_forecast, df_naive = preproc.filter_data(dfUsage_clean, 0.95)
+    #df_naive = pd.DataFrame()                                  # TMB testing
+    #df_to_forecast = dfUsage_clean                             # TMB testing
 
     # Stationarity and Seasonality tests - cannot run on lambda as it will time out
     #stationarity_df=preproc.test_stationarity_dickey_fuller(df_to_forecast)
@@ -360,10 +359,10 @@ def main(data, freq, dimkey_list, account):
 
 def lambda_handler(event, context):
     key, metadatakey = get_keys()
-    dataloadcache, metadata_str = rs3.get_data(tidy_folder + freq + '/', key, metadatakey)
+    metadata_str, cols = rs3.get_metadata(tidy_folder + freq + '/', metadatakey)
+    dataloadcache = rs3.get_data(tidy_folder + freq + '/', key, cols)
     meta_dict = preproc.meta_str_to_dict(metadata_str)
     dimkey_list = preproc.meta_to_dim_list(meta_dict)
-    rs3.write_meta_tmp(metadata_str)
     data, account = preproc.select_ts(dataloadcache)
     main(data, freq, metadata_str, account) #TODO feed in dimkey_list to main?
     return
@@ -375,7 +374,8 @@ if __name__ == "__main__":
     while True:
         if dataloadcache.empty:
             key, metadatakey = get_keys()
-            dataloadcache, metadata_str = rs3.get_data(tidy_folder + freq + '/', key, metadatakey)
+            metadata_str, cols = rs3.get_metadata(tidy_folder + freq + '/', metadatakey)
+            dataloadcache = rs3.get_data(tidy_folder + freq + '/', key, cols)
         meta_dict = preproc.meta_str_to_dict(metadata_str)
         dimkey_list = preproc.meta_to_dim_list(meta_dict)
         rs3.write_dict_to_textfile() #TODO convert metadat_str to dict and pass to fxn

@@ -175,22 +175,23 @@ def clean_data(raw_df: pd.DataFrame, datetime_col: str, y: str, startdate, endda
 
     return df, df_ids
 
-def filter_data(df: pd.DataFrame, zero_threshold: float, groupby_fields: list):
+def filter_data(df: pd.DataFrame, zero_threshold: float):
+
     z = df['ds'].nunique()
     # Score time series based on percentage of zeros
-    dfZeros = df.groupby(groupby_fields).agg(lambda x:x.eq(0).sum()).reset_index()
+    dfZeros = df.groupby('unique_id').agg(lambda x:x.eq(0).sum()).reset_index()
     dfZeros['pct_zeros'] = dfZeros['y']/z
 
     # If less than threshold of values are non-zero, separate with view to forecast with naive model
     keep = dfZeros[dfZeros['pct_zeros'] < zero_threshold]
-    df_to_forecast = pd.merge(df, keep[groupby_fields], left_on=groupby_fields,
-                             right_on=groupby_fields, how='right')
+    df_to_forecast = pd.merge(df, keep['unique_id'], left_on='unique_id',
+                             right_on='unique_id', how='right')
 
-    df_naive = df[~df['ts_id'].isin(df_to_forecast['ts_id'])]
+    df_naive = df[~df['unique_id'].isin(df_to_forecast['unique_id'])]
 
-    logger.info(str( df['ts_id'].nunique() - df_to_forecast['ts_id'].nunique() ) + ' time series will be forecast with naive model out of ' + str(df['ts_id'].nunique()))
+    logger.info(str( df['unique_id'].nunique() - df_to_forecast['unique_id'].nunique() ) + ' time series will be forecast with naive model out of ' + str(df['unique_id'].nunique()))
     print(str
-          (df['ts_id'].nunique() - df_to_forecast['ts_id'].nunique()) + ' time series will be forecast with naive model out of ' + str(df['ts_id'].nunique())
+          (df['unique_id'].nunique() - df_to_forecast['unique_id'].nunique()) + ' time series will be forecast with naive model out of ' + str(df['unique_id'].nunique())
           )
     return df_to_forecast, df_naive
 

@@ -2,6 +2,11 @@ import gzip, csv, os
 import pandas as pd
 import pickle
 import shutil
+import hashlib
+import io
+import sys
+import zipfile
+import chardet
 import boto3
 from datetime import datetime as dt
 from io import StringIO, BytesIO, TextIOWrapper
@@ -36,14 +41,53 @@ def datapath(freq):
 def read_from_S3(filepath, key):
     #logger = logging.getLogger('ts_engine.readWrite.read_from_s3')
     #logger.info('get file %s from %s' % (key, filepath))
+    print('read_from S3')
     print(DATABUCKET, filepath, key)
     obj = s3.Object(DATABUCKET, filepath + key)
-    with gzip.GzipFile(fileobj=obj.get()["Body"]) as gzipfile:
-        data = gzipfile.read()
-        data_str = data.decode()
+    try:
+        with gzip.GzipFile(fileobj=obj.get()["Body"]) as gzipfile:
+            data = gzipfile.read()
+            data_str = data.decode()
+    except:
+        body = obj.get()["Body"]
+        print(type(body))
+        file_like_obj = io.BytesIO(body.read())
+        data = gzip.GzipFile(fileobj=io.BytesIO(s3.Object(DATABUCKET, filepath + key).get()['Body'].read()), mode='rb').read()
+        print('data')
+        print(data)
+        with gzip.open(data, 'rb') as f_in:
+                with open(key, 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+        print(key)
     return data_str
 
-def get_data(filepath, key, metadatakey):
+def stream_zip_file(obj):  # to delete??
+    count = 0
+    buffer = io.BytesIO(obj.get()["Body"].read())
+    print (buffer)
+    z = gzip.GzipFile(buffer)
+    foo2 = z.open(z.infolist()[0])
+    print(sys.getsizeof(foo2))
+    line_counter = 0
+    for _ in foo2:
+        line_counter += 1
+    print (line_counter)
+    z.close()
+
+def get_data(filepath, key, cols):
+    # get usage data
+    usage_str = read_from_S3(filepath, key)
+    df = pd.read_csv(StringIO(usage_str))
+    print(df.columns)
+    df.columns=cols
+    df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%dT%H:%M:%SZ' )
+    df=df.sort_values('tm', ascending=True)
+    #df.dropna(subset=['y'], inplace = True) # need to generalise this
+    return df
+
+def get_metadata(filepath, metadatakey):
+    print('get_METAdata')
+    print(DATABUCKET, filepath, metadatakey)
     # get metadata
     metadata_dict = {}
     headers = []
@@ -56,15 +100,7 @@ def get_data(filepath, key, metadatakey):
             continue
         else:
             headers.append(key_value_pair[0])
-
-    # get usage data
-    usage_str = read_from_S3(filepath, key)
-    df = pd.read_csv(StringIO(usage_str))
-    df.columns=headers
-    df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%dT%H:%M:%SZ' )
-    df=df.sort_values('tm', ascending=True)
-    #df.dropna(subset=['y'], inplace = True) # need to generalise this
-    return df, metadata_str
+    return metadata_str, headers
 
 def get_data_local():
     df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/data/dfUsage.csv')
