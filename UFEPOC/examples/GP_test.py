@@ -142,7 +142,7 @@ def add_slider_to_function(figure: go.Figure, parameters):
     figure.update_layout(sliders=sliders, )
     return figure
 ########################### import data  ###########################
-Y_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/Y_df.csv', index_col=1) # cols = (index), unique_id, ds,y
+Y_df = pd.read_csv('/UFEPOC/output_files/hierarchical/onfido/Y_df.csv', index_col=1) # cols = (index), unique_id, ds,y
 n=len(Y_df.loc['onfido'])
 t = np.arange(n)
 data_df = pd.DataFrame({'t' : t})

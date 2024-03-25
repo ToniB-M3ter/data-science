@@ -162,7 +162,7 @@ def cross_validate(Y_df, model, h):
         for k in range(len(cutoff)):
             cv = crossvalidation_df[crossvalidation_df['cutoff'] == cutoff[k]]
             x = StatsForecast.plot(df, cv.loc[:, cv.columns != 'cutoff'])
-            x.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/xval/xval_{}_{}.png'.format(re.split('\\s|:', i)[0],str(model)))
+            x.savefig('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_figs/xval/xval_{}_{}.png'.format(re.split('\\s|:', i)[0],str(model)))
 
         rmse_score = df_rmse(crossvalidation_df['actual'], crossvalidation_df['AutoETS']) # TODO make model configurable
         cv_scores.append(rmse_score)
@@ -177,7 +177,7 @@ def cross_validate(Y_df, model, h):
         rs3.write_csv_log_to_S3(cvs_scores_df, 'cvs_scores_df')
     else:
         cvs_scores_df.to_csv(
-            '/Users/tmb/PycharmProjects/data-science/UFE/output_files/crossvalidation_{}.csv'.format(dt.today().strftime("%Y_%d_%m %H%M%S")))
+            '/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/crossvalidation_{}.csv'.format(dt.today().strftime("%Y_%d_%m %H%M%S")))
     return cvs_scores_df
 
 def evaluate_cross_validation(df, metric):

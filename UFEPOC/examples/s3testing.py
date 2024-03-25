@@ -30,7 +30,7 @@ def download_datapath():
     return filepath, key, metakey
 
 def upload_datapath():
-    filepath = '/UFE/output_files/'  # allow selection of data
+    filepath = '/UFEPOC/output_files/'  # allow selection of data
     metakey = 'hier_2024_03_04_usage_meta.gz'
     key = 'engine_p.csv'
     return filepath, key, metakey
@@ -42,7 +42,7 @@ def write_csv_to_bytes(df):
     #     sb.flush()
     #     buffer.seek(0)
 
-    df = pd.read_csv('/UFE/data/dfUsage.csv')
+    df = pd.read_csv('/UFEPOC/data/dfUsage.csv')
     df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%d %H:%M:%S')
     df= df[0:100000]
     tmp_csv=df.to_csv()
@@ -78,7 +78,7 @@ def download_gzipped(bucket, key, fp, compressed_fp=None):
         shutil.copyfileobj(gz, fp) # gz is gzip file
 
 def upload_file_in_memory(bucket, key):
-    upload_file = '/Users/tmb/PycharmProjects/data-science/UFE/output_files/engine_p.csv'
+    upload_file = '/UFEPOC/output_files/engine_p.csv'
     key = 'engine_p.gz'
     """In memory compression"""
     with open(upload_file, 'rb') as fp:
@@ -99,7 +99,7 @@ def upload_dataframe_in_memory(df, bucket, key):
     return
 
 def example2(bucket, key):
-    upload_file = '/Users/tmb/PycharmProjects/data-science/UFE/output_files/engine_p.csv'
+    upload_file = '/UFEPOC/output_files/engine_p.csv'
     key = 'whelper_engine_p.gz'
     """Using a temporary file for compression"""
     with open(upload_file, 'rb') as fp, TemporaryFile() as helper_fp:
@@ -199,7 +199,7 @@ def read_textfile(bucket):
     original.seek(0)
     upload_gzip(bucket,'tmbmetatest.txt',original)
 
-    with open("/Users/tmb/PycharmProjects/data-science/UFE/data/hier_2024_03_06_usage_meta.txt", "r") as fp, TemporaryFile() as helper_fp:
+    with open("/UFEPOC/data/hier_2024_03_06_usage_meta.txt", "r") as fp, TemporaryFile() as helper_fp:
         #bio = BytesIO(fp.read().encode('utf-8'))
         upload_gzip(bucket,'tmbmetatest.txt',fp, compressed_fp=helper_fp)
     return
@@ -223,8 +223,8 @@ def upload_gzip(bucket, key, fp, compressed_fp=None, content_type='text/plain'):
 def write_meta_to_s3(metadata_str, filepath, key):
     metadata_byte = metadata_str.encode()
     print(type(metadata_byte))
-    with open('/Users/tmb/PycharmProjects/data-science/UFE/data/hier_2024_03_04_usage_meta.txt', 'rb') as f_in:
-        with gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/data/hier_2024_03_18_usage_meta.gz', 'wb') as f_out:
+    with open('/UFEPOC/data/hier_2024_03_04_usage_meta.txt', 'rb') as f_in:
+        with gzip.open('/UFEPOC/data/hier_2024_03_18_usage_meta.gz', 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
 
     #with gzip.open('/tmp/tmpmeta.txt.gz', 'wb') as f:
@@ -241,7 +241,7 @@ def main():
     # Get file location and name
     filepath, metadatakey, key = upload_datapath()
     #download_gzipped(bucket, filepath+key, ungzipped)
-    #df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/engine_p.csv')
+    #df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/engine_p.csv')
     #upload_dataframe_in_memory(df, 'tmbbucket', 'csv_upload.gz')
     #example2(bucket, filepath + key)
 

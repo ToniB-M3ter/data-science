@@ -31,8 +31,8 @@ elif 'h' in data_freq:
 
 
 # base forecast file paths
-dfUsage_file = f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/dfUsage.csv'
-forecasts_file = f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/forecasts.csv'
+dfUsage_file = f'/UFEPOC/output_files/{ORG}/dfUsage.csv'
+forecasts_file = f'/UFEPOC/output_files/{ORG}/forecasts.csv'
 
 
 fileLocs = [ dfUsage_file, forecasts_file]
@@ -69,7 +69,7 @@ ts_models = [
 ]
 
 def read_model_from_local():
-    with open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/model.pkl', 'rb') as f:
+    with open('/UFEPOC/output_files/model.pkl', 'rb') as f:
         model = pickle.load(f)
     return model
 
@@ -89,7 +89,7 @@ def plot_forecasts(model, df, forecasts, model_aliases):
     plt.show()
 
     #plotname = 'forecast_plot'
-    #forecast_plot.savefig(f'/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{ORG}/{plotname}')
+    #forecast_plot.savefig(f'/Users/tmb/PycharmProjects/data-science/UFEPOC/output_figs/{ORG}/{plotname}')
     return
 
 model=read_model_from_local()

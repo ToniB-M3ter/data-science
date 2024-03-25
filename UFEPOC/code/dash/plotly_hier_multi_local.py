@@ -59,9 +59,10 @@ try:
     elif ts in ['ord', 'ordered']:
         nrows = 15
         ids = plot_df['unique_id'].unique()[2500:2514]
-    elif ts in [' ', 'random']:
-        nrows = 15
-        t = random.sample(range(len(unique_ids)), 15)  # 15 random numbers for indices to plot
+    elif ts in [' ', 'random', 'rand']:
+        nrows = 10
+        #t = random.sample(range(len(unique_ids)), 15)  # 15 random numbers for indices to plot
+        ids = random.choices(plot_df['unique_id'].unique(), k=10)
     elif ts == 'def':
         ids = ['onfido/0010800003CuyKfAAJ/facial_similarity_report_photo_fully_auto',
                'onfido/0010800003CuyKfAAJ/identity_report_standard',
@@ -85,7 +86,13 @@ fig = make_subplots(rows=nrows, cols=1, vertical_spacing=0.3/nrows,
 
 annotations_list=[]
 
+cnt = 0
+
+
 for n, id in zip(range(1,nrows), ids):
+    cnt = cnt + 1
+    print(str(cnt) + '    ' + id)
+
     fig.append_trace(go.Scatter(name=id, x=plot_df['ds'],y=plot_df[plot_df['unique_id']==id]['y'], marker=dict(color="#2ca02c")), row=n, col=1)
     fig.append_trace(go.Scatter(name=id+'AutoETS', x=plot_df['ds'],y=plot_df[plot_df['unique_id']==id]['AutoETS'], marker=dict(color="#ff7f0e"), showlegend=False), row=n, col=1)
     fig.append_trace(go.Scatter(name=id + 'AutoETS/BottomUp', x=plot_df['ds'], y=plot_df[plot_df['unique_id'] == id]['AutoETS/BottomUp'], marker=dict(color="#17becf"),  showlegend=False), row=n, col=1)

@@ -21,7 +21,7 @@ def tsfresh_example():
     robot_execution_failures.download_robot_execution_failures()
     df, y = robot_execution_failures.load_robot_execution_failures()
     print(df.head())
-    df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/data/robot_exec_fail.csv')
+    df.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/data/robot_exec_fail.csv')
     #print(df.info())
 
     print(df[df.id == 3][['time', 'F_x', 'F_y', 'F_z', 'T_x', 'T_y', 'T_z']])
@@ -39,7 +39,7 @@ def tsfresh_example():
                          # we impute = remove all NaN features automatically
                          impute_function=impute)
 
-    X.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/data/tsfreshFeat.csv')
+    X.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/data/tsfreshFeat.csv')
     return
 
 def create_lags(df: pd.DataFrame, lags: int) -> pd.DataFrame:
@@ -67,7 +67,7 @@ def mutual_info(df: pd.DataFrame):
 
 
 def main():
-    usage = pd.read_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/df.csv', index_col=0)
+    usage = pd.read_csv(f'/UFEPOC/output_files/hierarchical/onfido/df.csv', index_col=0)
     lags = create_lags(usage, 10)
     print(lags.head(10))
     usage_lags = tsfresh_create_lags(usage, 10)

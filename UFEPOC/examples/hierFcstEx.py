@@ -99,7 +99,7 @@ def hier_prep(df: pd.DataFrame, startdate, enddate) -> pd.DataFrame:
     print('Fit from '  + str(startdate) +' to '+ str(enddate))
 
     df_ids = df[['account_cd', 'account_nm', 'meter', 'measure']].drop_duplicates() #TODO change to all generic 'dimensions'
-    df_ids.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/df_ids.csv')
+    df_ids.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/hierarchical/onfido/df_ids.csv')
 
     # drop unneeded columns & add column for org and rename tm --> ds for forecasting
     df = df[['tm','account_cd','meter','measure','y']]
@@ -226,7 +226,7 @@ def prep_forecast_for_s3(df_best_model: pd.DataFrame, tags, df_ids, model_name):
     if USER is None:
         rs3.write_csv_log_to_S3(fin_hier_forcast, 'hier_forecast')
     else:
-        fin_hier_forcast.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/fin_hier_forcast.csv')
+        fin_hier_forcast.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/hierarchical/onfido/fin_hier_forcast.csv')
 
     return fin_hier_forcast
 
@@ -295,7 +295,7 @@ def main(data, freq, metadata_str, account):
     # Clean and Prepare Data
     startdate, enddate = pp.select_date_range(freq)
     df, df_ids = hier_prep(data, startdate, enddate)
-    df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/df.csv')
+    df.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/hierarchical/onfido/df.csv')
 
     # Filter time series with > 90% zeros out of analysis
     df_to_forecast, df_naive = pp.filter_data(df, 0.90, ['org','account','meter'])
@@ -303,28 +303,28 @@ def main(data, freq, metadata_str, account):
     Spc = get_spec()
     Y_df, S_df, tags = get_aggregates(df_to_forecast, Spc) # unique_id column created ; if filtering use df_to_forecast
     Y_df = add_noise(Y_df)
-    Y_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/Y_df.csv')
-    S_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/S_df.csv')
+    Y_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/hierarchical/onfido/Y_df.csv')
+    S_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/hierarchical/onfido/S_df.csv')
 
     #plot_correlations(Y_df) # Partial and Auto Correlation plots
     Y_train_df, Y_test_df, h = pp.split_data(Y_df, 0.15)
 
     # Get Base Forecasts
-    Y_hat_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/Y_hat_df.csv')
-    Y_fitted_df=pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/Y_fitted_df.csv')
+    Y_hat_df = pd.read_csv('/UFEPOC/output_files/hierarchical/onfido/Y_hat_df.csv')
+    Y_fitted_df=pd.read_csv('/UFEPOC/output_files/hierarchical/onfido/Y_fitted_df.csv')
 
     # Reconcile
     Y_rec_df = reconcile_forecasts(Y_hat_df, Y_fitted_df, Y_train_df, S_df, tags)
-    Y_rec_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/Y_rec_df.csv')
+    Y_rec_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/hierarchical/onfido/Y_rec_df.csv')
     rs3.write_csv_log_to_S3(Y_rec_df, 'reconciled_forecasts')
 
     # Evaluate
     evaluation = evaluate_forecasts(Y_df, Y_rec_df, Y_test_df, Y_train_df, tags)
-    evaluation.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/evaluation.csv')
+    evaluation.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/hierarchical/onfido/evaluation.csv')
 
     # TODO select best model/reconciliation method
     #evaluation = pd.DataFrame() # testing
-    #Y_rec_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/Y_rec_df.csv',  index_col=0)
+    #Y_rec_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/hierarchical/onfido/Y_rec_df.csv',  index_col=0)
     best_model=select_best_model(Y_rec_df, evaluation)
 
     # Prep for save

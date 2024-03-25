@@ -1,8 +1,8 @@
 # running code from CL
-# poetry run python UFE/code/tmbtesting.py
+# poetry run python UFEPOC/code/tmbtesting.py
 
 import sys
-sys.path.insert(1, '/Users/tmb/PycharmProjects/data-science/UFE/code')
+sys.path.insert(1, '/UFEPOC/code')
 # plotting
 import matplotlib.pyplot as plt
 import boto3
@@ -31,7 +31,7 @@ os.environ['DATABUCKET']  = 'm3ter-usage-forecasting-poc-m3ter-332767697772-us-e
 DATABUCKET = os.getenv('DATABUCKET')
 boto3.setup_default_session(profile_name='ml-labs-prod')
 
-df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/df.csv', index_col=0)
+df = pd.read_csv('/UFEPOC/output_files/df.csv', index_col=0)
 
 # Set service to s3
 s3 = boto3.resource("s3")
@@ -39,7 +39,7 @@ s3 = boto3.resource("s3")
 def plot_raw(data: pd.DataFrame, title: str):
     fig, ax = plt.subplots()
     ax = data.plot(ax=ax).set(title=title)
-    plt.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output/{}.jpg'.format(title[0:7]))
+    plt.savefig('/Users/tmb/PycharmProjects/data-science/UFEPOC/output/{}.jpg'.format(title[0:7]))
     plt.show()
     #fig = px.line(data, x=data.index, y=data['Volume'], title='Yahoo Stock')
     #fig.show()
@@ -49,7 +49,7 @@ def plot_forecast(res, title):
     fig, ax = plt.subplots()
     fig = res.plot_predict(720,840)
     fig.suptitle(title)
-    plt.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output/{}.png'.format(title[0:7]))
+    plt.savefig('/Users/tmb/PycharmProjects/data-science/UFEPOC/output/{}.png'.format(title[0:7]))
     #res.predict().plot(ax=ax)
     plt.show()
     return
@@ -66,11 +66,11 @@ def get_housing_data():
 def get_nixtla_data():
     Y_df = pd.read_parquet('https://datasets-nixtla.s3.amazonaws.com/m4-hourly.parquet')
     print(Y_df.info())
-    Y_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/data/nixtla_sample_data.csv')
+    Y_df.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/data/nixtla_sample_data.csv')
     return
 
 def get_engine_data():
-    df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/engine_p.csv')
+    df = pd.read_csv('/UFEPOC/output_files/engine_p.csv')
     df['ds'] = pd.to_datetime(df['ds'], format='%Y-%m-%d %H:%M:%S')
     return df
 
@@ -99,7 +99,7 @@ def convert_to_dashboard_format(df: pd.DataFrame, model_aliases):
 
     dfAll = pd.concat(dfs, ignore_index=True)
 
-    dfAll.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/forecasts.csv')
+    dfAll.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/forecasts.csv')
     return dfAll
 
 def smoothing(data):
@@ -152,15 +152,15 @@ def write_model_to_s3(model, filepath, key):
     return
 
 def write_model_to_s3_2(model):
-    filepath = 'UFE/models/'
+    filepath = 'UFEPOC/models/'
     key = 'tmbtest_model.pkl'
 
     # serialise and write to temp file
-    with open('/UFE/output_files/model.pkl', 'wb') as f:
+    with open('/UFEPOC/output_files/model.pkl', 'wb') as f:
         pickle.dump(model, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     # open temp file
-    with open('/UFE/output_files/model.pkl', 'rb') as f:
+    with open('/UFEPOC/output_files/model.pkl', 'rb') as f:
         # write
         response = boto3.client('s3').put_object(
             Body=f,
@@ -190,8 +190,8 @@ def prep_data_for_s3():
         , '.model'  # model (e.g. model_)
     ]
 
-    df_ids = pd.read_csv('/UFE/output_files/df_ids.csv')
-    df = pd.read_csv('/UFE/output_files/only_forecst.csv')
+    df_ids = pd.read_csv('/UFEPOC/output_files/df_ids.csv')
+    df = pd.read_csv('/UFEPOC/output_files/only_forecst.csv')
 
     pat = "|".join(df_ids.account)
     df.insert(0, 'account', df['unique_id'].str.extract("(" + pat + ')', expand=False))
@@ -209,7 +209,7 @@ def prep_data_for_s3():
 
     dfAll = pd.concat(dfs, ignore_index=True)
 
-    dfAll.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/all_forecasts_test.csv')
+    dfAll.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/all_forecasts_test.csv')
 
 def prep_meta_data_for_s3_new():
     BUCKET = 'm3ter-usage-forecasting-poc-m3ter-332767697772-us-east-1',
@@ -225,7 +225,7 @@ def prep_meta_data_for_s3_new():
     for line in meta_list:
         writer.write(','.join(map(str, line))+'\n')
     writer.close()
-    #file = gzip.open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/tmbmeta.gz', 'wt')
+    #file = gzip.open('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/tmbmeta.gz', 'wt')
     #for line in meta_list:
     #    file.write(','.join(map(str, line))+'\n')
     #file.close()
@@ -240,7 +240,7 @@ def prep_meta_data_for_s3():
     # TODO change meta as dictionary passed parameter to function
     meta = {'nm': 'typ', 'meter': 'dim', 'measurement': 'dim', 'account': 'dim', 'account_id': 'dim', '.model': 'dim', 'z': 'measure', 'tm': 'time', '_intrvl': '1h', 'z0': 'measure', 'z1': 'measure'}
     meta_list = list(meta.items())
-    with open ('/UFE/output_files/tmbmeta.gz', 'w') as file: # TODO change to local temp folder
+    with open ('/UFEPOC/output_files/tmbmeta.gz', 'w') as file: # TODO change to local temp folder
         for i in meta_list:
             file.write(','.join(map(str, i))+'\n')  # file type => _io.TextIOWrapper
     return file
@@ -273,10 +273,10 @@ def only_bytes(filepath, key):
     z0, measure
     z1, measure"""
 
-    with gzip.open('/UFE/output_files/file.txt.gz', 'wb') as f:
+    with gzip.open('/UFEPOC/output_files/file.txt.gz', 'wb') as f:
         f.write(meta_bytes)
 
-    with gzip.open('/UFE/output_files/file.txt.gz', 'rb') as f:
+    with gzip.open('/UFEPOC/output_files/file.txt.gz', 'rb') as f:
         #obj = s3.Object(DATABUCKET, filepath + key)
         #obj.put(Body=f)
         s3client.put_object(Bucket=DATABUCKET, Body=f, Key=filepath+key)

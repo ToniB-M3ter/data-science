@@ -22,7 +22,7 @@ app.layout = html.Div([
     Output("line-charts-x-graph", "figure"), 
     Input("line-charts-x-checklist", "value"))
 def update_line_chart(unique_ids):
-    df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_hat_df.csv')
+    df = pd.read_csv('/UFEPOC/output_files/hierarchical/Y_hat_df.csv')
     mask = df.unique_id.isin(unique_ids)
     fig = px.line(df[mask],
         x="ds", y="AutoETS", color='unique_id')

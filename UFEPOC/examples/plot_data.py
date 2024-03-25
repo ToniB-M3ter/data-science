@@ -154,7 +154,7 @@ def plot_HW_forecast_vs_actuals(forecast, models: list):
     print(str(forecast.isnull().any(axis=1).count()) + ' nulls in forecast' )
     forecast['y'] = forecast['y'].replace(0, 1)
     forecast.dropna(inplace=True)
-    forecast.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/engine_p.csv')
+    forecast.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/engine_p.csv')
 
     # set number of subplots = number of timeseries
     min_subplots = 2
@@ -179,22 +179,22 @@ def plot_HW_forecast_vs_actuals(forecast, models: list):
             ax[ax_].legend()
         fig.tight_layout()
         plt.show()
-        plt.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/eng_{}.jpg'.format(forecast['unique_id'][1]))
+        plt.savefig('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_figs/eng_{}.jpg'.format(forecast['unique_id'][1]))
     return
 
 def plot_hier(tags, S_df, Y_df, Y_rec_df):
     hplot = HierarchicalPlot(S=S_df, tags=tags)
     fig = plot_series(Y_df, plot_random=False, max_insample_length=50, engine='matplotlib')
-    fig.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/hierarchical/onfido/index.png', bbox_inches='tight')
+    fig.savefig('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_figs/hierarchical/onfido/index.png', bbox_inches='tight')
     plt.show()
 
 
 
 def main():
-    #rawdata = pd.read_csv('/UFE/data/dfUsage_28.csv')
+    #rawdata = pd.read_csv('/UFEPOC/data/dfUsage_28.csv')
     #data = clean_raw_data(rawdata)
 
-    path = '/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/'
+    path = '/UFEPOC/output_files/hierarchical/onfido/'
     files = [#'Y_train',
              #'Y_test',
              'Y_df',   # observed data including aggregations
@@ -210,15 +210,15 @@ def main():
 
 
     #Y_train_T = transpose_data(Y_train, '1D', 'y')
-    #Y_train_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_train_T.csv')
+    #Y_train_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/hierarchical/Y_train_T.csv')
 
     #Y_df_T = transpose_data(Y_df, '1D', 'y')
-    #Y_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_df_T.csv')
+    #Y_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/hierarchical/Y_df_T.csv')
 
     # Y_hat_df_T = transpose_data(Y_hat_df, '1D', 'AutoETS')
-    # Y_hat_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_hat_df_AE_T.csv')
+    # Y_hat_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/hierarchical/Y_hat_df_AE_T.csv')
     # Y_hat_df_T = transpose_data(Y_hat_df, '1D', 'Naive')
-    # Y_hat_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/Y_hat_df_N_T.csv')
+    # Y_hat_df_T.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/hierarchical/Y_hat_df_N_T.csv')
 
     plot_hier(Y_df, Y_rec_df)
     return

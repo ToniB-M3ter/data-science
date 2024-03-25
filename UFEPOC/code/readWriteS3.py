@@ -78,7 +78,6 @@ def get_data(filepath, key, cols):
     # get usage data
     usage_str = read_from_S3(filepath, key)
     df = pd.read_csv(StringIO(usage_str))
-    print(df.columns)
     df.columns=cols
     df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%dT%H:%M:%SZ' )
     df=df.sort_values('tm', ascending=True)
@@ -103,7 +102,7 @@ def get_metadata(filepath, metadatakey):
     return metadata_str, headers
 
 def get_data_local():
-    df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/data/dfUsage.csv')
+    df = pd.read_csv('/UFEPOC/data/dfUsage.csv')
     df['tm'] = pd.to_datetime(df['tm'], format='%Y-%m-%d %H:%M:%SZ')
     return df
 
@@ -112,7 +111,7 @@ def read_model_from_s3(filepath, key):  #(fit_folder+freq, model_aliases[0]+'.pk
     return model
 
 def read_model_from_local():
-    with open('/Users/tmb/PycharmProjects/data-science/UFE/output_files/model.pkl', 'rb') as f:
+    with open('/UFEPOC/output_files/model.pkl', 'rb') as f:
         model = pickle.load(f)
     return model
 

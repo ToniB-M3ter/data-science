@@ -275,6 +275,7 @@ def main(data, freq, dimkey_list, account):
         forecasts = make_prediction(model, df_to_forecast, h)
         end_predict = time()
         logger.info(f'Forecast Minutes: {(end_predict - init_predict) / 60}')
+        print(f'Forecast Minutes: {(end_predict - init_predict) / 60}')
     elif FIT_FORECAST == 'BOTH':
         if len(df_to_forecast)>0:
             logger.info(f'Start Fit Minutes: {naive_init_fit}')

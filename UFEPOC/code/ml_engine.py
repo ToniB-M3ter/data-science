@@ -35,7 +35,7 @@ def make_plot(name, df, data=None, max_insample_length=None):
     # visualise forecast
 
     fig = plot_series(df=df, forecasts_df=data, max_insample_length=max_insample_length)
-    fig.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}.png'.format(name+'_plot'))
+    fig.savefig('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_figs/{}.png'.format(name+'_plot'))
 
 def get_data():
     #await M4.async_download('data', group='Hourly')
@@ -45,10 +45,10 @@ def get_data():
     # sample_uids = random.choices(uids, k=4)
     # df = df[df['unique_id'].isin(sample_uids)].reset_index(drop=True)
     # df['ds'] = df['ds'].astype('int64')
-    df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/hierarchical/onfido/Y_df.csv', index_col=0)
+    df = pd.read_csv('/UFEPOC/output_files/hierarchical/onfido/Y_df.csv', index_col=0)
     df['ds'] = pd.to_datetime(df['ds'], format='%Y-%m-%d')
     fig = plot_series(df, max_insample_length=20 * 7, engine='matplotlib')
-    fig.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}.png'.format('raw'))
+    fig.savefig('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_figs/{}.png'.format('raw'))
     return df
 
 def process(df):
@@ -91,7 +91,7 @@ def fit_model(df):
     fcst.fit(df)
     preds = fcst.predict(24)
     fig = plot_series(df, preds, max_insample_length=24 * 7, engine='matplotlib')
-    fig.savefig('/Users/tmb/PycharmProjects/data-science/UFE/output_figs/{}.png'.format('preds'))
+    fig.savefig('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_figs/{}.png'.format('preds'))
     return preds
 
 def main():

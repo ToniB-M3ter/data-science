@@ -40,7 +40,7 @@ def meta_dict_to_tmp_txt_file(meta_dict):
         meta_dict['z0'] = 'measure'
         meta_dict['z1'] = 'measure'
 
-    #f_meta = open('/Users/tmb/PycharmProjects/data-science/UFE/data/meta_to_txt_file.txt', "w")
+    #f_meta = open('/Users/tmb/PycharmProjects/data-science/UFEPOC/data/meta_to_txt_file.txt', "w")
     f_meta = open('tmp/meta_txt_file.txt', "w")
     f_meta.write("\n")
     for k in meta_dict.keys():
@@ -164,7 +164,7 @@ def clean_data(raw_df: pd.DataFrame, datetime_col: str, y: str, startdate, endda
     if USER is None:
         rs3.write_csv_log_to_S3(df_ids, 'df_ids')
     else:
-        df_ids.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/df_ids.csv')
+        df_ids.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/df_ids.csv')
 
     df['unique_id'] = df['ts_id']
     df = df[[datetime_col, y, 'unique_id']]
