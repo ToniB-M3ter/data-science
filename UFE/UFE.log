@@ -1,0 +1,25 @@
+2024-03-27 12:35:51,686 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-03-27 12:35:51,824 - __main__ - INFO - 1320 Unique accounts
+2024-03-27 12:35:51,828 - __main__ - INFO - 1578240 total records from 2023-06-01 00:00:00 to 2024-02-29 00:00:00
+2024-03-27 12:37:52,988 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-03-27 12:37:53,130 - __main__ - INFO - 1320 Unique accounts
+2024-03-27 12:37:53,134 - __main__ - INFO - 1578240 total records from 2023-06-01 00:00:00 to 2024-02-29 00:00:00
+2024-03-27 12:37:53,153 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-03-27 13:08:23,105 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-03-27 13:08:23,120 - __main__ - INFO - Forecast Only Minutes:  + 30.499473130702974
