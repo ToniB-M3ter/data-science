@@ -191,6 +191,9 @@ def evaluate_cross_validation(df, metric: list)->pd.DataFrame:
     evals['best_model'] = evals.idxmin(axis=1)
     return evals
 
+
+
+
 def get_best_model_forecast(forecasts_df, evaluation_df):
     df = forecasts_df.set_index('ds', append=True).stack().to_frame().reset_index(level=2) # Wide to long
     df.columns = ['model', 'best_model_forecast']

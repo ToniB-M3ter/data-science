@@ -24,6 +24,7 @@ class ErrorAnalysis():
 
     def mase_calc(y, y_hat, y_insample, seasonality=24):
         errors = np.mean(np.abs(y - y_hat), axis=1)
+
         scale = np.mean(np.abs(y_insample[:, seasonality:] - y_insample[:, :-seasonality]), axis=1)
         return np.mean(errors / scale)
 
@@ -55,29 +56,37 @@ class ErrorAnalysis():
 
 class Evaluate():
     def __init__(self,
-                 Y_df: pd.DataFrame,
+                 df: pd.DataFrame,
                  h: int,  # forecast horizon
                 ):
-        self.Y_df = Y_df
+        self.df = df
         self.h = h
 
+    def evaluate_simple(actuals, forecasts, metrics):
+        valid = pd.merge(forecasts, actuals, on=['unique_id', 'ds'], how='outer') # combine actuals and forecasts for evaluation
+        valid.fillna(0, inplace=True)
+        valid.sort_values(['unique_id', 'ds'], inplace=True)
+        evals = evaluate(valid, metrics=metrics)
+        return evals
 
-    def cross_validate(Y_df, model, h, n_win):
+
+    def cross_validate(df, model, h, n_win):
         crossvalidation_df = model.cross_validation(
-            df=Y_df,
+            df=df, # Y_df
             h=h,
             step_size=h,
             n_windows=n_win
         )
         return crossvalidation_df
 
-    def evaluate_cross_validation(df, metric: list) -> pd.DataFrame:
+    def evaluate_cross_validation(df, metrics: list, train=None) -> pd.DataFrame:
         df.reset_index(inplace=True)
         models = df.drop(columns=['unique_id', 'ds', 'cutoff', 'y']).columns.tolist()
         evals = []
         # Calculate loss for every unique_id and cutoff.
         for cutoff in df['cutoff'].unique():
-            eval_ = evaluate(df[df['cutoff'] == cutoff], metrics=[metric], models=models)
+            eval_ = evaluate(df[df['cutoff'] == cutoff], metrics=metrics, models=models)
+            #eval_ = evaluate(df[df['cutoff'] == cutoff], metrics=metrics, models=models, train_df=train)
             evals.append(eval_)
         evals = pd.concat(evals)
         evals = evals.groupby('unique_id').mean(numeric_only=True)  # Averages the error metrics for all cutoffs for every combination of model and unique_id
@@ -94,3 +103,10 @@ class Evaluate():
         df.columns = df.columns.droplevel()
         df = df.reset_index(level=1)
         return df
+
+    def reformat(evaluation_df):
+        eval_reformatted = pd.melt(eval, id_vars=['unique_id', 'metric'], var_name='.model', value_name='value')
+        print(eval_reformatted.head())
+        eval_reformatted.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/eval_reformatted.csv')
+        return eval_reformatted
+

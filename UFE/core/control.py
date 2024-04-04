@@ -1,15 +1,14 @@
-
 import os, sys, importlib
 from time import time
 import pandas as pd
 from datetime import datetime as dt
 
+import utils
 import _readWrite as rw
 import _pre_process as preproc
 from _stats_fit_forecast import FitForecast as ff
 import _combine_forecasts as comb
 import _evaluation as eval
-
 
 from statsforecast import StatsForecast
 from statsforecast.models import (
@@ -68,10 +67,19 @@ n_jobs = -1
 hpct = 0.15
 predict_int = 95
 add_noise = 'Y'
-models_indices = [0, 2, 3, 4, 5, 6, 7, 8, 9]
+models_indices = [0,3,6 ] #[0, 2, 3, 4, 5, 6, 7, 8, 9]
+
 # evaluation parms
-xval= 'Y'
+xval= 'N'
 n_win = 3
+metrics =[mse,  # mean square error
+                mape,  # mean absolute percentage error
+                #mae,  # mean absolute error
+                #mase,  # mean absolute scaled error
+                rmse,  # root mean square error
+                #mqloss,  # multi-quantile loss
+                #scaled_crps # scaled continues ranked probability score
+                ]
 #################################################################################################################
 def main(freq):
     """
@@ -108,8 +116,8 @@ def main(freq):
         rw.write_csv_log_to_S3(dfUsage_clean, 'dfUsage_clean')
         rw.write_csv_log_to_S3(dfUsage_clean, 'df_ids')
     else:
-        dfUsage_clean.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/{ORG}/dfUsage.csv', index=False)
-        df_ids.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/{ORG}/df_ids.csv', index=False)
+        dfUsage_clean.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/dfUsage.csv', index=False)
+        df_ids.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/df_ids.csv', index=False)
 
     # Get Parms and Models
     season = preproc.get_season(freq)
@@ -119,7 +127,6 @@ def main(freq):
         df_to_forecast = preproc.add_noise(dfUsage_clean)
     else:
         df_to_forecast = dfUsage_clean
-
 
     # Fit and Forecast
     if FIT_FORECAST == 'FIT':
@@ -142,51 +149,62 @@ def main(freq):
         logger.info(f'Forecast Only Minutes:  + {(end_foreonly - init_foreonly) / 60}')
 
     # Add UUID to model
+    UID_list = [utils.generate_uid() for x in ts_models]
+    model_codes = pd.DataFrame({'model':ts_models, 'UUID':UID_list})
+    file_UID = utils.generate_uid()
 
     # Combine
-    forecasts = comb.avg_models(forecasts)
+    if FIT_FORECAST in ['FORECAST', 'BOTH']:  # only proceed if we have generated forecasts
+        forecasts = comb.avg_models(forecasts) #Create new forecast that is a combination of other forecasts
 
-    # Save forecasts
-    if USER is None:
-        rw.logs.write_csv_log_to_S3(forecasts) #TODO add S3 path, and pass file name e.g. all forecasts
-    else:
-        forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/forecasts.csv')
+        # Save forecasts
+        if USER is None:
+            rw.logs.write_csv_log_to_S3(forecasts) #TODO add S3 path, and pass file name e.g. all forecasts
+        else:
+            forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/forecasts-{file_UID}.csv')
 
-    # Validate
-    if xval=='Y':
-        init_xval = time()
-        crossvalidation_df = eval.Evaluate.cross_validate_simple(df_to_forecast, model, h, n_win)
-        end_xval = time()
-        logger.info(f'Cross Validation Minutes:  + {(end_xval - init_xval) / 60}')
-    else:
-        init_xval = time()
-        crossvalidation_df = eval.Evaluate.cross_validate_simple(df_to_forecast, model, h, 1)
-        end_xval = time()
-        logger.info(f'Cross Validation Minutes:  + {(end_xval - init_xval) / 60}')
+        # Validate
+        if xval=='Y':
+            init_xval = time()
+            crossvalidation_df = eval.Evaluate.cross_validate(df_to_forecast, model, h, n_win)
+            end_xval = time()
+            logger.info(f'Cross Validation Minutes:  + {(end_xval - init_xval) / 60}')
+            evaluation_df = eval.Evaluate.evaluate_cross_validation(crossvalidation_df, metrics)
+            # evaluation_df = eval.Evaluate.evaluate_cross_validation(crossvalidation_df, [rmse, .mape], dfUsage_clean)
+        else:
+            init_xval = time()
+            evaluation_df = eval.Evaluate.evaluate_simple(forecasts, dfUsage_clean, metrics)
+            end_xval = time()
+            logger.info(f'Cross Validation Minutes:  + {(end_xval - init_xval) / 60}')
 
-    crossvalidation_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/{ORG}/cv_rmse_df.csv')
-    evaluation_df = eval.evaluate_cross_validation(crossvalidation_df, [mse,  # mean square error
-                                                                            mape,  # mean absolute percentage error
-                                                                            mae,  # mean absolute error
-                                                                            mase,  # mean absolute scaled error
-                                                                            rmse,  # root mean square error
-                                                                            mqloss,  # multi-quantile loss
-                                                                            scaled_crps # scaled continues ranked probability score
-                                                                            ]
-                                                       )
-    evaluation_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/{ORG}/evaluation_df.csv')
+        evaluation_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/evaluation_{file_UID}.csv')
+        # TODO reformat evaluation files and load to S3
+        eval_reformat = eval.Evaluate.reformat(evaluation_df, model_codes)
 
-    # TODO reformat evaluation files and load to S3
+        # reformat for saving to s3
+        eval_reformat.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/eval_reformat_{file_UID}.csv')
 
-    summary_df = evaluation_df.groupby('best_model').size().sort_values().to_frame()
-    summary_df.reset_index().columns = ["Model", "Nr. of unique_ids"]
-    summary_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/{ORG}/summary_df.csv')
+        # select best model for display in dashboard
+        best_forecasts = eval.Evaluate.get_best_model_forecast(forecasts, evaluation_df)
+        best_forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/best_forecasts.csv')
 
-    best_forecasts = eval.Evaluate.get_best_model_forecast(forecasts, evaluation_df)
-    best_forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/{ORG}/best_forecasts.csv')
+        #summary_df = evaluation_df.groupby('best_model').size().sort_values().to_frame()
+        #summary_df.reset_index().columns = ["Model", "Nr. of unique_ids"]
+        #summary_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/summary_df.csv')
 
-
-    # Save
+        # Save
+        if len(df_to_forecast) > 0:
+            forecast_to_save = rw.tsdata.prep_forecast_for_s3(best_forecasts, df_ids, evaluation_df)
+            #if USER is None:
+            if 1==1:
+                rw.tsdata.write_gz_csv_to_s3(forecast_to_save, forecast_folder + freq + '/',
+                                        'best_' + dt.today().strftime("%Y_%d_%m") + '_' + 'usage.gz')
+                storedFileNameBase=rw.metadata.write_dict_to_textfile() # pass metaDict if created, e.g. metadata_str
+                rw.metadata.write_meta_tmp(storedFileNameBase)
+                rw.metadata.gz_upload(storedFileNameBase, forecast_folder + freq + '/')
+                #rs3.write_meta_to_s3(metadata_str, freq, forecast_folder + freq + '/', 'best_' + dt.today().strftime("%Y_%d_%m") + '_' + 'hier_2024_03_04_usage_meta.gz')
+            else:
+                forecast_to_save.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/best_forecast_{file_UID}.csv') # TODO define UID
 
 if __name__ == "__main__":
     freq = input("Hourly (1h) or Daily (1D) frequency: ")

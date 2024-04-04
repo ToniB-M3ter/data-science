@@ -1,8 +1,22 @@
 import pandas as pd
-import _readWrite as rw
+import numpy as np
+import utils
+from functools import partial
 import _pre_process as preproc
+import _combine_forecasts as comb
+import _evaluation as eval
 import _stats_fit_forecast as fitfrct
 
+from utilsforecast.evaluation import evaluate
+from utilsforecast.losses import (
+    mse,   # mean square error
+    mape,  # mean absolute percentage error
+    mae,   # mean absolute error
+    mase,  # mean absolute scaled error
+    rmse,  # root mean square error
+    mqloss, # multi-quantile loss
+    scaled_crps, # scaled continues ranked probability score
+    )
 
 """
 0   Naive
@@ -19,7 +33,7 @@ import _stats_fit_forecast as fitfrct
 11  OptimizedTheta
 """
 
-dfUsage = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/onfido/dfUsage.csv',  parse_dates=['ds'])
+dfUsage = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/dfUsage.csv',  parse_dates=['ds'])
 ids = ['980576b982cf369a3c00735bb78feb7575304eac08e53d56e07e420296ae0b7d',
        '2c82fa602e85fa401b9d8aca2b590c1549c3dfbbeff2cf1b20b3b60adcf8515c',
         '86ec7c5729d2ec4a39a29a5efb0b28387d711984ee6f80db758aa492494b49e1',
@@ -36,19 +50,54 @@ ids = ['980576b982cf369a3c00735bb78feb7575304eac08e53d56e07e420296ae0b7d',
         'db9b215f48ace36dfae0641ec6138619beda20c8d3ed533991ef58cc9e6300a4',
        ]
 
-dfUsage = dfUsage[dfUsage['unique_id'].isin(ids)]
+#dfUsage = dfUsage[dfUsage['unique_id'].isin(ids)]
+
+
+def simple_evaluation():
+    # train_df (actuals)
+    train = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/dfUsage.csv',
+                          parse_dates=['ds'])
+    # forecasts
+    forecasts = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/forecasts-d2185c80-8ec1-4af6-a517-59ab59a73c86.csv',
+                          parse_dates=['ds'])
+
+    # combine actuals and forecasts for evaluation
+    valid = pd.merge(forecasts, train, on=['unique_id', 'ds'], how='outer')
+    valid.fillna(0, inplace=True)
+    valid.sort_values(['unique_id', 'ds'], inplace=True)
+    valid.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/valid.csv')
+
+    # metrics
+    metrics = [mse, rmse, mape]
+
+    # models - could select specific models to evaluate if desired
+
+    eval_ = evaluate(valid, metrics=metrics)
+    eval_.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/eval.csv')
+
+def reformat_evaluation():
+    eval = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/evaluation_aa53d2d1-98e7-4fa8-8df1-f06e0434bfc7.csv', index_col=0)
+    eval_reformatted = pd.melt(eval, id_vars=['unique_id', 'metric'], var_name='.model', value_name='value' )
+    print(eval_reformatted.head())
+    eval_reformatted.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/eval_reformatted.csv')
 
 def main():
     freq = '1D'
     indices = [0, 2, 5]
 
+    # create decoding dataframe
     #ts_models = preproc.select_models(freq, indices)
-    #print(ts_models)
-
-    meta_dict =
-    rw.metadata.meta_dict_to_tmp_txt_file(meta_dict)
+    #UID_list = [utils.generate_uid() for x in ts_models]
+    #model_codes = pd.DataFrame({'model':ts_models, 'UUID':UID_list})
+    #print(model_codes)
 
     #test_model = fitfrct.FitForecast.both(dfUsage, 18, 7, '1D', ts_models, -1, 95)
 
+    #forecasts = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/forecasts.csv')
+    #comb_forecasts = comb.avg_models(forecasts)
+    #comb_forecasts.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/comb_forecasts.csv')
+
+    #simple_evaluation()
+    reformat_evaluation()
 if __name__ == "__main__":
     main()

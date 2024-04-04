@@ -14,10 +14,12 @@ logger = logging.getLogger('URE.readWrite')
 # Remove line and let boto3 find the role and set up default session when releasing
 boto3.setup_default_session(profile_name='ml-labs-prod')
 # TODO: Parameters to be set with config files
+os.environ['ORG'] = 'onfido'
 os.environ['DATABUCKET']  = 'm3ter-usage-forecasting-poc-onfido-332767697772-us-east-1'
 
 global DATABUCKET
 DATABUCKET = os.getenv('DATABUCKET')
+ORG = os.getenv('ORG')
 USER = os.getenv('USER')
 #################################################################################################################
 
@@ -151,6 +153,53 @@ class metadata():
 
         self.convert_text_to_zip() # convert tmp file to .gz for loading to s3
 
+    # save metadata file to S3
+
+    def write_dict_to_textfile(metaDict=None):
+        storedFileNameBase = "best_usage_meta".format(dt.today().strftime("%Y_%d_%m"))
+        storedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.txt'
+        output = open("/tmp/" + storedFileName, "w")
+        if metaDict:
+            pass
+        else:
+            metaDict = {'nm,': 'type',
+                        'ts_id': 'ts_id',
+                        'account_cd': 'dim',
+                        'account_nm': 'dim',
+                        'meter': 'dim',
+                        'measure': 'dim',
+                        'tm': 'time',
+                        'z': 'measure',
+                        'z0': 'measure',
+                        'z1': 'measure',
+                        '.model': 'dim',
+                        '_intrvl': '1D'}
+        # json.dump(testDict, open('/tmp/test.txt', 'w'))
+        for k, v in metaDict.items():
+            output.writelines(f'{k} {v}\n')
+        return storedFileNameBase
+
+    def write_meta_tmp(storedFileNameBase):
+        storedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.txt'
+        savedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.gz'
+        with open("/tmp/{}".format(storedFileName), 'rb') as f_in:
+            with gzip.open("/tmp/{}".format(savedFileName), 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+                # f.write(content.encode("utf-8"))
+        return
+
+    def gz_upload(storedFileNameBase, filepath):
+        # fileName = 'hier_2024_03_18_usage_meta.gz'
+        savedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.gz'
+        with open("/tmp/{}".format(savedFileName), 'rb') as f_in:
+            gzipped_content = gzip.compress(f_in.read())
+            s3client.upload_fileobj(
+                BytesIO(gzipped_content),
+                DATABUCKET,
+                filepath + savedFileName,
+                ExtraArgs={"ContentType": "text/plain", "ContentEncoding": "gzip"}
+            )
+
 class tsdata():
     def get_data(filepath, key, cols):
         # get usage data
@@ -161,6 +210,46 @@ class tsdata():
         df = df.sort_values('tm', ascending=True)
         # df.dropna(subset=['y'], inplace = True)
         return df
+
+    def prep_forecast_for_s3(df: pd.DataFrame, df_ids, evaluation_df):
+        df.reset_index(inplace=True)
+        evaluation_df.reset_index(inplace=True)
+
+        dashboard_cols = [
+            'tm'  # timestamp
+            , 'meter'
+            , 'measure'
+            , 'account_cd'  # account m3ter uid
+            , 'account_nm'
+            , 'ts_id'  # time series unique id
+            , 'z'  # prediction
+            , 'z0'  # lower bound of 95% confidence interval
+            , 'z1'  # lower bound of 95% confidence interval
+            , '.model'  # model (e.g. model_)
+        ]
+
+        df = pd.merge(df, evaluation_df[['unique_id', 'best_model']], how='left', on='unique_id')
+        df_ids.columns = ['account_cd', 'account_nm', 'meter', 'measure', 'unique_id']
+        df = pd.merge(df, df_ids, how='left', on='unique_id')
+        df.rename(columns={'unique_id': 'ts_id', 'best_model_y': '.model'}, inplace=True)
+        df.sort_values(['account_cd', 'meter', 'ds'], inplace=True)
+
+        if USER is None:
+            pass
+            logs.write_csv_log_to_S3(df, 'dfBest')
+        else:
+            df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/dfBest.csv')
+        return df
+
+    def write_gz_csv_to_s3(df, filepath, key): # TODO merge with logs.write_csv_log_to_S3??
+        gz_buffer = BytesIO()
+
+        with gzip.GzipFile(mode='w', fileobj=gz_buffer) as gz_file:
+            df.to_csv(TextIOWrapper(gz_file, 'utf8'), index=False)
+
+        obj = s3.Object(DATABUCKET, filepath + key)
+        obj.put(Body=gz_buffer.getvalue())
+        return
 
 class model():
     def read_model_from_s3(filepath, key):  # (fit_folder+freq, model_aliases[0]+'.pkl')
