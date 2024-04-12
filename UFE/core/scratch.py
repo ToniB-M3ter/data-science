@@ -18,6 +18,10 @@ from utilsforecast.losses import (
     scaled_crps, # scaled continues ranked probability score
     )
 
+# Set parms
+pd.set_option('display.max_columns', 1000)
+pd.set_option('display.max_rows', 5)
+
 """
 0   Naive
 1   HistoricAverage
@@ -76,10 +80,14 @@ def simple_evaluation():
     eval_.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/eval.csv')
 
 def reformat_evaluation():
-    eval = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/evaluation_aa53d2d1-98e7-4fa8-8df1-f06e0434bfc7.csv', index_col=0)
-    eval_reformatted = pd.melt(eval, id_vars=['unique_id', 'metric'], var_name='.model', value_name='value' )
-    print(eval_reformatted.head())
+    evaluation_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/evaluation_aa53d2d1-98e7-4fa8-8df1-f06e0434bfc7.csv', index_col=0)
+    eval_reformatted = pd.melt(evaluation_df, id_vars=['unique_id', 'metric'], var_name='.model', value_name='value' )
+    df_models = eval_reformatted[['unique_id', '.model']].drop_duplicates()
+    df_models['UUID'] = [utils.generate_uid() for x in range(len(df_models.index))]
+    eval_reformatted = pd.merge(eval_reformatted, df_models, on=['unique_id','.model'], how='left')
     eval_reformatted.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/eval_reformatted.csv')
+    return eval_reformatted
+
 
 def main():
     freq = '1D'
@@ -97,7 +105,11 @@ def main():
     #comb_forecasts = comb.avg_models(forecasts)
     #comb_forecasts.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/comb_forecasts.csv')
 
+    evaluation_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/evaluation_706dceed-70f3-49bb-9f77-426336f847c8.csv', index_col = 0)
+    all_forecasts = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/all_forecasts-706dceed-70f3-49bb-9f77-426336f847c8.csv', index_col=0)
+    best_forecasts = eval.Evaluate.best_model_forecast(all_forecasts, evaluation_df)
+
     #simple_evaluation()
-    reformat_evaluation()
+    #reformat_evaluation()
 if __name__ == "__main__":
     main()

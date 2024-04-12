@@ -61,16 +61,17 @@ ORG=os.getenv('ORG')
 tidy_folder = '2_tidy/'
 fit_folder = '4_fit/'
 forecast_folder = '4_forecast/'
+logs_folder = 'logs/'
 
 # fit/forecast parms
 n_jobs = -1
 hpct = 0.15
 predict_int = 95
 add_noise = 'Y'
-models_indices = [0,3,6 ] #[0, 2, 3, 4, 5, 6, 7, 8, 9]
+models_indices = [0,2] #[0, 2, 3, 4, 5, 6, 7, 8, 9]
 
 # evaluation parms
-xval= 'N'
+xval= 'Y'
 n_win = 3
 metrics =[mse,  # mean square error
                 mape,  # mean absolute percentage error
@@ -112,9 +113,10 @@ def main(freq):
     logger.info(str(tidydata['account_cd'].nunique()) + ' Unique accounts')
     logger.info(str(len(tidydata)) + ' total records from ' + str(tidydata['tm'].min()) + ' to ' + str(tidydata['tm'].max()))
 
-    if USER is None:
-        rw.write_csv_log_to_S3(dfUsage_clean, 'dfUsage_clean')
-        rw.write_csv_log_to_S3(dfUsage_clean, 'df_ids')
+    #if USER is None:
+    if 1==1:
+        rw.logs.write_csv_log_to_S3(dfUsage_clean, 'dfUsage_clean', logs_folder)
+        rw.logs.write_csv_log_to_S3(dfUsage_clean, 'df_ids', logs_folder)
     else:
         dfUsage_clean.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/dfUsage.csv', index=False)
         df_ids.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/df_ids.csv', index=False)
@@ -147,46 +149,58 @@ def main(freq):
         forecasts, model = ff.both(df_to_forecast, h, season, freq, ts_models, n_jobs, predict_int)
         end_foreonly = time()
         logger.info(f'Forecast Only Minutes:  + {(end_foreonly - init_foreonly) / 60}')
+    #forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/base_forecasts.csv')
 
-    # Add UUID to model
-    UID_list = [utils.generate_uid() for x in ts_models]
-    model_codes = pd.DataFrame({'model':ts_models, 'UUID':UID_list})
+    # UUID for file
     file_UID = utils.generate_uid()
 
     # Combine
     if FIT_FORECAST in ['FORECAST', 'BOTH']:  # only proceed if we have generated forecasts
-        forecasts = comb.avg_models(forecasts) #Create new forecast that is a combination of other forecasts
-
+        all_forecasts = comb.avg_models(forecasts)  # Create new forecast that is a combination of other forecasts
         # Save forecasts
         if USER is None:
-            rw.logs.write_csv_log_to_S3(forecasts) #TODO add S3 path, and pass file name e.g. all forecasts
+        #if 1==1:
+            rw.logs.write_csv_log_to_S3(all_forecasts, 'forecasts', forecast_folder)
         else:
-            forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/forecasts-{file_UID}.csv')
+            all_forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/all_forecasts-{file_UID}.csv')
 
         # Validate
+        evaluation_df = eval.Evaluate.evaluate_simple(dfUsage_clean, all_forecasts, metrics)
+
+        # if we are cross validating there is an extra step
         if xval=='Y':
             init_xval = time()
             crossvalidation_df = eval.Evaluate.cross_validate(df_to_forecast, model, h, n_win)
             end_xval = time()
             logger.info(f'Cross Validation Minutes:  + {(end_xval - init_xval) / 60}')
-            evaluation_df = eval.Evaluate.evaluate_cross_validation(crossvalidation_df, metrics)
-            # evaluation_df = eval.Evaluate.evaluate_cross_validation(crossvalidation_df, [rmse, .mape], dfUsage_clean)
-        else:
-            init_xval = time()
-            evaluation_df = eval.Evaluate.evaluate_simple(forecasts, dfUsage_clean, metrics)
-            end_xval = time()
-            logger.info(f'Cross Validation Minutes:  + {(end_xval - init_xval) / 60}')
+            xval_eval = eval.Evaluate.score_cross_validation(crossvalidation_df, metrics)
+            xval_eval.to_csv(
+                f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/xval_eval_{file_UID}.csv')
+            evaluation_df = pd.merge(xva_eval, evaluation_df['combined-base'], on=['Unique_id', 'metric'], how='left')
 
-        evaluation_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/evaluation_{file_UID}.csv')
-        # TODO reformat evaluation files and load to S3
-        eval_reformat = eval.Evaluate.reformat(evaluation_df, model_codes)
-
-        # reformat for saving to s3
-        eval_reformat.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/eval_reformat_{file_UID}.csv')
+        evaluation_df.to_csv(
+            f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/evaluation_{file_UID}.csv')
 
         # select best model for display in dashboard
-        best_forecasts = eval.Evaluate.get_best_model_forecast(forecasts, evaluation_df)
+        best_forecasts = eval.Evaluate.best_model_forecast(all_forecasts, evaluation_df)
         best_forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/best_forecasts.csv')
+
+        # reformat evaluation data and save]
+        # Add UUID to model
+        UID_list = [utils.generate_uid() for x in ts_models]
+        model_codes = pd.DataFrame({'model': ts_models, 'UUID': UID_list})
+        model_codes.loc[len(df.index)] = ['combined-base', utils.generate_uid()] #add entry for combined
+        eval_reformat = eval.Evaluate.reformat(evaluation_df)
+
+        #if USER is None:
+        if 1==1:
+        # reformat for saving to s3
+            try:
+                rw.logs.write_csv_log_to_S3(eval_reformat, 'eval_reformat', forecast_folder)
+            except:
+                logger.error("Cannot write %s to S3" % (eval_reformat))
+        else:
+            eval_reformat.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/eval_reformat_{file_UID}.csv')
 
         #summary_df = evaluation_df.groupby('best_model').size().sort_values().to_frame()
         #summary_df.reset_index().columns = ["Model", "Nr. of unique_ids"]

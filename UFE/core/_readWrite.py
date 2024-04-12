@@ -267,7 +267,8 @@ class model():
         return
 
 class logs():
-    def write_csv_log_to_S3(df, data_name):  #TODO add S3 path
+    def write_csv_log_to_S3_old(df, data_name, path):
+        #print(df.head()) # <_io.TextIOWrapper name='/tmp/eval_reformat.csv' mode='r' encoding='UTF-8'>
         # set up for logging missing accounts
         OBJECT_NAME = 'logs/{}.csv'.format(data_name)
         LAMBDA_LOCAL_TMP_FILE = '/tmp/{}.csv'.format(data_name)
@@ -275,6 +276,34 @@ class logs():
         with open(LAMBDA_LOCAL_TMP_FILE, 'w') as file:
             writer = csv.writer(file)
             writer.writerow(df)
+            print(writer.writerow(df))
 
         s3clt.upload_file(LAMBDA_LOCAL_TMP_FILE, DATABUCKET, OBJECT_NAME)
+
+        # try with put_object
+        with open(LAMBDA_LOCAL_TMP_FILE, 'r') as fd:
+            print(fd)
+            result = s3.put_object(
+                Bucket=DATABUCKET,
+                Key=OBJECT_NAME,
+                Body=fd
+            )
+
+        if result['ResponseMetadata']['HTTPStatusCode'] == 200:
+            response = "https://{0}.s3.us-east-1.amazonaws.com/{1}".format(DATABUCKET, OBJECT_NAME)
+            logger.info(response)
+        else:
+            response = False
+
         return
+
+    def write_csv_log_to_S3(df, data_name, path):
+        OBJECT_NAME = path+'{}.csv'.format(data_name)
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer)
+        result = s3.Object(DATABUCKET, OBJECT_NAME).put(Body=csv_buffer.getvalue())
+        if result['ResponseMetadata']['HTTPStatusCode'] == 200:
+            response = "https://{0}.s3.us-east-1.amazonaws.com/{1}".format(DATABUCKET, OBJECT_NAME)
+            logger.info(response)
+        else:
+            logger.error(result)

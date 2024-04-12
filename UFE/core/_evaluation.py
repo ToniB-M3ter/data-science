@@ -2,6 +2,7 @@ import os
 import logging
 import pandas as pd
 import numpy as np
+import utils
 
 from utilsforecast.evaluation import evaluate
 from utilsforecast.losses import (
@@ -63,12 +64,19 @@ class Evaluate():
         self.h = h
 
     def evaluate_simple(actuals, forecasts, metrics):
+        print(forecasts.columns)
+        # check if combine lo/hi cols in forecasts, and if so drop them
+        comb_cols = [x for x in forecasts.columns if 'combined' in x]
+        print(comb_cols)
+        if comb_cols:
+            forecasts.drop(['combined-lo', 'combined-hi'], axis=1, inplace=True)
+        print(forecasts.columns)
+
         valid = pd.merge(forecasts, actuals, on=['unique_id', 'ds'], how='outer') # combine actuals and forecasts for evaluation
         valid.fillna(0, inplace=True)
         valid.sort_values(['unique_id', 'ds'], inplace=True)
         evals = evaluate(valid, metrics=metrics)
         return evals
-
 
     def cross_validate(df, model, h, n_win):
         crossvalidation_df = model.cross_validation(
@@ -79,7 +87,7 @@ class Evaluate():
         )
         return crossvalidation_df
 
-    def evaluate_cross_validation(df, metrics: list, train=None) -> pd.DataFrame:
+    def score_cross_validation(df, metrics: list, train=None) -> pd.DataFrame:
         df.reset_index(inplace=True)
         models = df.drop(columns=['unique_id', 'ds', 'cutoff', 'y']).columns.tolist()
         evals = []
@@ -89,8 +97,8 @@ class Evaluate():
             #eval_ = evaluate(df[df['cutoff'] == cutoff], metrics=metrics, models=models, train_df=train)
             evals.append(eval_)
         evals = pd.concat(evals)
-        evals = evals.groupby('unique_id').mean(numeric_only=True)  # Averages the error metrics for all cutoffs for every combination of model and unique_id
-        evals['best_model'] = evals.idxmin(axis=1)
+        #evals = evals.groupby('unique_id').mean(numeric_only=True)  # Averages the error metrics for all cutoffs for every combination of model and unique_id
+        #evals['best_model'] = evals.idxmin(axis=1)
         return evals
 
     def get_best_model_forecast(forecasts_df, evaluation_df):
@@ -104,9 +112,25 @@ class Evaluate():
         df = df.reset_index(level=1)
         return df
 
+    def best_model_forecast(forecasts_df, evals):
+        evals = evals.groupby('unique_id').mean(numeric_only=True)  # Averages the error metrics for all cutoffs for every combination of model and unique_id
+        evals['best_model'] = evals.idxmin(axis=1)
+        df = forecasts_df.set_index('ds', append=True).stack().to_frame().reset_index(level=2)  # Wide to long
+        df.columns = ['model', 'best_model_forecast']
+        df = df.join(evals[['best_model']])
+        df = df.query('model.str.replace("-lo-95|-hi-95", "", regex=True) == best_model').copy()
+        df.loc[:, 'model'] = [model.replace(bm, 'best_model') for model, bm in zip(df['model'], df['best_model'])]
+        df = df.drop(columns='best_model').set_index('model', append=True).unstack()
+        df.columns = df.columns.droplevel()
+        df = df.reset_index(level=1)
+        return df
+
     def reformat(evaluation_df):
-        eval_reformatted = pd.melt(eval, id_vars=['unique_id', 'metric'], var_name='.model', value_name='value')
-        print(eval_reformatted.head())
-        eval_reformatted.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/eval_reformatted.csv')
+        eval_reformatted = pd.melt(evaluation_df, id_vars=['unique_id', 'metric'], var_name='.model',
+                                   value_name='value')
+        df_models = eval_reformatted[['unique_id', '.model']].drop_duplicates()
+        df_models['UUID'] = [utils.generate_uid() for x in range(len(df_models.index))]
+        eval_reformatted = pd.merge(eval_reformatted, df_models, on=['unique_id', '.model'], how='left')
+        #eval_reformatted.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/eval_reformatted.csv')
         return eval_reformatted
 
