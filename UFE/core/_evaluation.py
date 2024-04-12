@@ -64,13 +64,10 @@ class Evaluate():
         self.h = h
 
     def evaluate_simple(actuals, forecasts, metrics):
-        print(forecasts.columns)
         # check if combine lo/hi cols in forecasts, and if so drop them
         comb_cols = [x for x in forecasts.columns if 'combined' in x]
-        print(comb_cols)
         if comb_cols:
             forecasts.drop(['combined-lo', 'combined-hi'], axis=1, inplace=True)
-        print(forecasts.columns)
 
         valid = pd.merge(forecasts, actuals, on=['unique_id', 'ds'], how='outer') # combine actuals and forecasts for evaluation
         valid.fillna(0, inplace=True)

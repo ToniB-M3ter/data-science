@@ -10,6 +10,6 @@ def avg_models(base_forecasts: DataFrame)-> DataFrame:
     coltypes = [lo_cols, hi_cols, base_cols]
     coltypesnames = ['lo', 'hi', 'base']
     for coltype, coltypename in zip(coltypes, coltypesnames):
-        base_forecasts['combined-' + coltypename] = round(base_forecasts[list(coltype)].sum(axis=1)/len(list(coltype)), 3)
+        base_forecasts['combined-' + coltypename + '95'] = round(base_forecasts[list(coltype)].sum(axis=1)/len(list(coltype)), 3)
     base_forecasts.rename(columns={'combined-base':'combined'}, inplace=True)
     return base_forecasts

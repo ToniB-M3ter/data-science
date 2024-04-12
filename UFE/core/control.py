@@ -166,6 +166,8 @@ def main(freq):
 
         # Validate
         evaluation_df = eval.Evaluate.evaluate_simple(dfUsage_clean, all_forecasts, metrics)
+        evaluation_df.to_csv(
+            f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/evaluation_{file_UID}.csv')
 
         # if we are cross validating there is an extra step
         if xval=='Y':
@@ -176,7 +178,7 @@ def main(freq):
             xval_eval = eval.Evaluate.score_cross_validation(crossvalidation_df, metrics)
             xval_eval.to_csv(
                 f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/xval_eval_{file_UID}.csv')
-            evaluation_df = pd.merge(xva_eval, evaluation_df['combined-base'], on=['Unique_id', 'metric'], how='left')
+            evaluation_df = pd.merge(xval_eval, evaluation_df[['unique_id', 'metric','combined']], on=['unique_id', 'metric'], how='left')
 
         evaluation_df.to_csv(
             f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/evaluation_{file_UID}.csv')
@@ -189,7 +191,7 @@ def main(freq):
         # Add UUID to model
         UID_list = [utils.generate_uid() for x in ts_models]
         model_codes = pd.DataFrame({'model': ts_models, 'UUID': UID_list})
-        model_codes.loc[len(df.index)] = ['combined-base', utils.generate_uid()] #add entry for combined
+        model_codes.loc[len(df.index)] = ['combined', utils.generate_uid()] #add entry for combined
         eval_reformat = eval.Evaluate.reformat(evaluation_df)
 
         #if USER is None:
@@ -202,12 +204,12 @@ def main(freq):
         else:
             eval_reformat.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/eval_reformat_{file_UID}.csv')
 
-        #summary_df = evaluation_df.groupby('best_model').size().sort_values().to_frame()
-        #summary_df.reset_index().columns = ["Model", "Nr. of unique_ids"]
-        #summary_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/summary_df.csv')
+        summary_df = evaluation_df.groupby('best_model').size().sort_values().to_frame()
+        summary_df.reset_index().columns = ["Model", "Nr. of unique_ids"]
+        summary_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/summary_df.csv')
 
         # Save
-        if len(df_to_forecast) > 0:
+        if len(all_forecasts) > 0:
             forecast_to_save = rw.tsdata.prep_forecast_for_s3(best_forecasts, df_ids, evaluation_df)
             #if USER is None:
             if 1==1:

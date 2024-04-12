@@ -107,3 +107,801 @@ See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stab
   warnings.warn(
 
 2024-03-28 09:51:57,607 - __main__ - INFO - Cross Validation Minutes:  + 3.600160797437032
+2024-04-11 10:50:45,969 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 10:50:46,126 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 10:50:46,130 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 10:50:47,960 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 10:52:31,709 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 10:52:31,713 - __main__ - INFO - Forecast Only Minutes:  + 1.7292412320772808
+2024-04-11 10:52:33,814 - __main__ - INFO - Cross Validation Minutes:  + 0.01820665200551351
+2024-04-11 10:55:52,440 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 10:55:52,597 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 10:55:52,602 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 10:55:54,384 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 10:57:38,534 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 10:57:38,538 - __main__ - INFO - Forecast Only Minutes:  + 1.7359161376953125
+2024-04-11 10:57:40,468 - __main__ - INFO - Cross Validation Minutes:  + 0.016514750321706136
+2024-04-11 10:59:33,541 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 10:59:33,700 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 10:59:33,704 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 10:59:35,527 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 11:01:41,900 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 11:01:41,904 - __main__ - INFO - Forecast Only Minutes:  + 2.106293535232544
+2024-04-11 11:01:43,965 - __main__ - INFO - Cross Validation Minutes:  + 0.01773724953333537
+2024-04-11 11:27:42,203 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 11:27:42,360 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 11:27:42,365 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 11:27:44,178 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 11:29:33,289 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 11:29:33,294 - __main__ - INFO - Forecast Only Minutes:  + 1.818624166647593
+2024-04-11 11:29:35,233 - __main__ - INFO - Cross Validation Minutes:  + 0.016547052065531413
+2024-04-11 11:43:24,895 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 11:43:25,053 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 11:43:25,058 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 11:43:26,883 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 11:45:11,773 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 11:45:11,778 - __main__ - INFO - Forecast Only Minutes:  + 1.7482723991076152
+2024-04-11 11:45:13,744 - __main__ - INFO - Cross Validation Minutes:  + 0.01658088763554891
+2024-04-11 11:53:28,653 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 11:53:28,809 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 11:53:28,813 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 11:53:30,676 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 11:55:15,807 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 11:55:15,812 - __main__ - INFO - Forecast Only Minutes:  + 1.7522884647051493
+2024-04-11 11:55:17,757 - __main__ - INFO - Cross Validation Minutes:  + 0.016554613908131916
+2024-04-11 11:55:19,326 - __main__ - ERROR - Cannot write                                                 unique_id metric         .model         value                                  UUID
+0       000111d79d89ee128ff0b685c298147df65d976ee68fdf...    mse          Naive  4.201070e+02  c022e643-c385-4476-a893-790e98a8a0f1
+1       000fe16f2bca00d39f3494f6c55e7dfbfb7439d6b394df...    mse          Naive  4.400803e-01  a910331d-93d8-4e91-8a5e-462cd735563f
+2       001076a244bf14ed2f3867c77b29dac3859e5dacaf5d8b...    mse          Naive  7.143159e+03  284a6938-10db-423c-ab43-a713a0948476
+3       001d00feb81bab52101fdee1f48fce6716d90f4e55896d...    mse          Naive  1.817806e+08  77e3face-3aa4-4318-a484-05c1b495e37a
+4       00251b7431e37a2351c2198e7594a909ee30f32b418ea2...    mse          Naive  6.510949e+01  126647ac-b0ff-45e6-9490-9d8fe01c99b9
+...                                                   ...    ...            ...           ...                                   ...
+116185  ffc41f479454bc8e3318be723b07e9c1c3f8f2c17c3881...   rmse  combined-base  9.392245e-03  6a0a8ad2-46c9-47c7-9e2a-afc110b06e2a
+116186  ffc62e4a688acf923d8e69991d7b92ee80ef30afbb0bee...   rmse  combined-base  9.435587e+00  621568b8-e9e8-4954-8b59-d9fdaf52dde0
+116187  ffe4b6e4595ec47845982e03616f3cc48901167c2ccc27...   rmse  combined-base  1.989886e+03  13a077c0-aec6-4e15-845d-e7311500c5c6
+116188  ffec969ec359aa34e198740ee86ceb5f8ff4766fa6afbe...   rmse  combined-base  1.422820e-01  944bea5c-4b39-412e-ae4a-37b18c973d3b
+116189  fff0a6ac176c8fe37b04d36f21c6408d9f03c090f83932...   rmse  combined-base  3.301427e-01  e793a2eb-c8e5-441e-af7c-2ac8acfbfe25
+
+[116190 rows x 5 columns] to S3
+2024-04-11 12:24:27,253 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 12:24:27,410 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 12:24:27,414 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 12:24:29,227 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 12:26:19,819 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 12:26:19,825 - __main__ - INFO - Forecast Only Minutes:  + 1.843308699131012
+2024-04-11 12:26:21,788 - __main__ - INFO - Cross Validation Minutes:  + 0.016953150431315105
+2024-04-11 12:26:29,530 - __main__ - ERROR - Cannot write                                                 unique_id metric         .model         value                                  UUID
+0       000111d79d89ee128ff0b685c298147df65d976ee68fdf...    mse          Naive  4.200588e+02  27309c04-d791-431f-9ec6-7628d4dcfa5d
+1       000fe16f2bca00d39f3494f6c55e7dfbfb7439d6b394df...    mse          Naive  4.412962e-01  584740ed-846e-4779-8d17-de60718974ff
+2       001076a244bf14ed2f3867c77b29dac3859e5dacaf5d8b...    mse          Naive  7.143421e+03  006f273f-df53-40b4-86a0-1721e6424a68
+3       001d00feb81bab52101fdee1f48fce6716d90f4e55896d...    mse          Naive  1.817806e+08  f246e9af-c500-4ebb-bcd9-d1a3f3e72926
+4       00251b7431e37a2351c2198e7594a909ee30f32b418ea2...    mse          Naive  6.507272e+01  e8cbedcd-4a9f-4961-9324-5b021444b5de
+...                                                   ...    ...            ...           ...                                   ...
+116185  ffc41f479454bc8e3318be723b07e9c1c3f8f2c17c3881...   rmse  combined-base  9.153688e-03  a681f584-2e32-4cb4-83af-5279c4458fa4
+116186  ffc62e4a688acf923d8e69991d7b92ee80ef30afbb0bee...   rmse  combined-base  9.434887e+00  7f4c5234-81f5-4a4f-8a85-b3bb7848c9a3
+116187  ffe4b6e4595ec47845982e03616f3cc48901167c2ccc27...   rmse  combined-base  1.989484e+03  fc1f44c8-f42a-46b7-9e76-9b1626d275ec
+116188  ffec969ec359aa34e198740ee86ceb5f8ff4766fa6afbe...   rmse  combined-base  1.420700e-01  fecea98f-430d-48cd-8765-292768b2d89f
+116189  fff0a6ac176c8fe37b04d36f21c6408d9f03c090f83932...   rmse  combined-base  3.306084e-01  c8b5388e-7070-406d-b468-ea76e0ac494f
+
+[116190 rows x 5 columns] to S3
+2024-04-11 12:27:58,696 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 12:27:58,855 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 12:27:58,859 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 12:28:00,717 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 12:29:45,538 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 12:29:45,543 - __main__ - INFO - Forecast Only Minutes:  + 1.7471283157666524
+2024-04-11 12:29:47,471 - __main__ - INFO - Cross Validation Minutes:  + 0.016357215245564778
+2024-04-11 12:29:48,182 - __main__ - ERROR - Cannot write                                                 unique_id metric         .model         value                                  UUID
+0       000111d79d89ee128ff0b685c298147df65d976ee68fdf...    mse          Naive  4.201103e+02  392a181f-8d8a-477f-b1b8-fd74052586d1
+1       000fe16f2bca00d39f3494f6c55e7dfbfb7439d6b394df...    mse          Naive  4.408390e-01  0526afd1-c0f7-48ec-bad6-97ac31d18230
+2       001076a244bf14ed2f3867c77b29dac3859e5dacaf5d8b...    mse          Naive  7.143407e+03  2360ee30-e317-46b2-bdb6-caf457837123
+3       001d00feb81bab52101fdee1f48fce6716d90f4e55896d...    mse          Naive  1.817806e+08  9d8cf17a-b899-4a5d-8e98-7ed3fe338ee4
+4       00251b7431e37a2351c2198e7594a909ee30f32b418ea2...    mse          Naive  6.513494e+01  1121cab9-977c-4708-86ec-c29a48256d4b
+...                                                   ...    ...            ...           ...                                   ...
+116185  ffc41f479454bc8e3318be723b07e9c1c3f8f2c17c3881...   rmse  combined-base  8.917186e-03  fb7e4d0f-3284-4ee3-8541-b302e9d6fa33
+116186  ffc62e4a688acf923d8e69991d7b92ee80ef30afbb0bee...   rmse  combined-base  9.423572e+00  5895942d-8947-43a7-adff-b4adc8762fab
+116187  ffe4b6e4595ec47845982e03616f3cc48901167c2ccc27...   rmse  combined-base  1.989832e+03  24ba5c8c-d5e1-455a-a418-61dbe9fe6cf5
+116188  ffec969ec359aa34e198740ee86ceb5f8ff4766fa6afbe...   rmse  combined-base  1.426405e-01  8d7b20c3-5329-4ec5-99cd-bbe81c1dd8bd
+116189  fff0a6ac176c8fe37b04d36f21c6408d9f03c090f83932...   rmse  combined-base  3.302948e-01  315a52f2-5867-415b-aa32-0582163f8796
+
+[116190 rows x 5 columns] to S3
+2024-04-11 12:34:10,617 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 12:34:10,777 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 12:34:10,781 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 12:34:12,687 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 12:35:57,749 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 12:35:57,754 - __main__ - INFO - Forecast Only Minutes:  + 1.7511450012524923
+2024-04-11 12:35:59,703 - __main__ - INFO - Cross Validation Minutes:  + 0.01654536326726278
+2024-04-11 12:36:00,458 - __main__ - ERROR - Cannot write                                                 unique_id metric         .model         value                                  UUID
+0       000111d79d89ee128ff0b685c298147df65d976ee68fdf...    mse          Naive  4.200772e+02  ddc9f7a8-9206-4906-beee-d699b4c28d4e
+1       000fe16f2bca00d39f3494f6c55e7dfbfb7439d6b394df...    mse          Naive  4.419800e-01  7a230a43-2476-4ce5-927f-4c8cf68958a4
+2       001076a244bf14ed2f3867c77b29dac3859e5dacaf5d8b...    mse          Naive  7.143392e+03  7a43d762-8ef4-4b49-888c-a2fbc99f12ee
+3       001d00feb81bab52101fdee1f48fce6716d90f4e55896d...    mse          Naive  1.817806e+08  253dc6c2-6243-4977-b947-e6e55a5655b6
+4       00251b7431e37a2351c2198e7594a909ee30f32b418ea2...    mse          Naive  6.508439e+01  788723e4-fb9b-4931-9bae-c27b9de6a9d7
+...                                                   ...    ...            ...           ...                                   ...
+116185  ffc41f479454bc8e3318be723b07e9c1c3f8f2c17c3881...   rmse  combined-base  8.909378e-03  33c1bf41-ecd5-41da-8b11-1fb3e130e248
+116186  ffc62e4a688acf923d8e69991d7b92ee80ef30afbb0bee...   rmse  combined-base  9.423764e+00  84b6475e-ff7f-4bae-9083-1ab54b8b709e
+116187  ffe4b6e4595ec47845982e03616f3cc48901167c2ccc27...   rmse  combined-base  1.989915e+03  04c0eb5b-4756-414c-a340-13c895787de4
+116188  ffec969ec359aa34e198740ee86ceb5f8ff4766fa6afbe...   rmse  combined-base  1.431783e-01  24e10370-69e8-4ea9-abfe-90ac807b4989
+116189  fff0a6ac176c8fe37b04d36f21c6408d9f03c090f83932...   rmse  combined-base  3.296876e-01  c80c5edb-ab10-4671-b741-b11564734bee
+
+[116190 rows x 5 columns] to S3
+2024-04-11 13:34:33,213 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 13:34:33,370 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 13:34:33,374 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 13:34:35,192 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 13:36:26,025 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 13:36:26,031 - __main__ - INFO - Forecast Only Minutes:  + 1.8473270455996196
+2024-04-11 13:36:28,042 - __main__ - INFO - Cross Validation Minutes:  + 0.01758201519648234
+2024-04-11 13:36:28,739 - __main__ - ERROR - Cannot write                                                 unique_id metric         .model         value                                  UUID
+0       000111d79d89ee128ff0b685c298147df65d976ee68fdf...    mse          Naive  4.200850e+02  0e6da1cc-6083-4428-a580-62730a2a8129
+1       000fe16f2bca00d39f3494f6c55e7dfbfb7439d6b394df...    mse          Naive  4.404905e-01  20671a32-116a-4621-8e05-292372e5e36d
+2       001076a244bf14ed2f3867c77b29dac3859e5dacaf5d8b...    mse          Naive  7.143442e+03  9ae1b521-343b-4f59-b843-99b7eb429244
+3       001d00feb81bab52101fdee1f48fce6716d90f4e55896d...    mse          Naive  1.817807e+08  07fb8671-6c27-42f7-a30d-6f23ae25566a
+4       00251b7431e37a2351c2198e7594a909ee30f32b418ea2...    mse          Naive  6.510241e+01  bf2a831e-22a9-4d57-a891-b6cf2d33e041
+...                                                   ...    ...            ...           ...                                   ...
+116185  ffc41f479454bc8e3318be723b07e9c1c3f8f2c17c3881...   rmse  combined-base  8.732728e-03  6a515a93-8876-4df2-869d-18092b907cbb
+116186  ffc62e4a688acf923d8e69991d7b92ee80ef30afbb0bee...   rmse  combined-base  9.434377e+00  8f85be9f-b67e-4909-a79c-f4a7248fa950
+116187  ffe4b6e4595ec47845982e03616f3cc48901167c2ccc27...   rmse  combined-base  1.989534e+03  e15db6be-f46b-45da-8c3c-fb6c45c63d1f
+116188  ffec969ec359aa34e198740ee86ceb5f8ff4766fa6afbe...   rmse  combined-base  1.426849e-01  e15c4a71-5555-4ff0-b125-1ff79bfad4a3
+116189  fff0a6ac176c8fe37b04d36f21c6408d9f03c090f83932...   rmse  combined-base  3.295362e-01  e386ca14-b38e-4562-bd8a-a2db7739e27b
+
+[116190 rows x 5 columns] to S3
+2024-04-11 13:41:31,568 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 13:41:31,725 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 13:41:31,730 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 13:41:33,566 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 13:43:24,327 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 13:43:24,332 - __main__ - INFO - Forecast Only Minutes:  + 1.8461143493652343
+2024-04-11 13:43:26,282 - __main__ - INFO - Cross Validation Minutes:  + 0.016658063729604086
+2024-04-11 13:43:26,921 - __main__ - ERROR - Cannot write                                                 unique_id metric         .model         value                                  UUID
+0       000111d79d89ee128ff0b685c298147df65d976ee68fdf...    mse          Naive  4.201261e+02  70d621cf-bc69-466b-ac51-1670cf679394
+1       000fe16f2bca00d39f3494f6c55e7dfbfb7439d6b394df...    mse          Naive  4.412580e-01  73ae565d-5acf-45bb-8e7b-2b50a8178e8b
+2       001076a244bf14ed2f3867c77b29dac3859e5dacaf5d8b...    mse          Naive  7.143352e+03  20080d03-3722-46ec-b201-4390af5b0a6e
+3       001d00feb81bab52101fdee1f48fce6716d90f4e55896d...    mse          Naive  1.817806e+08  b76db94c-efef-475b-9193-9725bf96cef4
+4       00251b7431e37a2351c2198e7594a909ee30f32b418ea2...    mse          Naive  6.509696e+01  fb872638-6913-49bb-87e2-b5030738a2fc
+...                                                   ...    ...            ...           ...                                   ...
+116185  ffc41f479454bc8e3318be723b07e9c1c3f8f2c17c3881...   rmse  combined-base  9.214711e-03  a5eb73e0-536b-4f63-a859-696db6b27b85
+116186  ffc62e4a688acf923d8e69991d7b92ee80ef30afbb0bee...   rmse  combined-base  9.424542e+00  a2350c18-d0af-4a18-b303-282af7009a89
+116187  ffe4b6e4595ec47845982e03616f3cc48901167c2ccc27...   rmse  combined-base  1.989845e+03  45bd036f-d01c-4003-bdac-1981b43547e1
+116188  ffec969ec359aa34e198740ee86ceb5f8ff4766fa6afbe...   rmse  combined-base  1.431915e-01  5928d682-d1d2-4550-9923-65343dc0be40
+116189  fff0a6ac176c8fe37b04d36f21c6408d9f03c090f83932...   rmse  combined-base  3.307651e-01  213a136b-d1b0-4e7a-8410-1589a13fa1c2
+
+[116190 rows x 5 columns] to S3
+2024-04-11 13:51:47,821 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 13:51:47,980 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 13:51:47,984 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 13:51:49,870 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 13:51:57,096 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 13:51:57,100 - __main__ - INFO - Forecast Only Minutes:  + 0.12051720221837361
+2024-04-11 13:51:58,822 - __main__ - INFO - Cross Validation Minutes:  + 0.015981415907541912
+2024-04-11 13:51:59,217 - __main__ - ERROR - Cannot write                                                unique_id metric         .model         value                                  UUID
+0      000111d79d89ee128ff0b685c298147df65d976ee68fdf...    mse          Naive  4.201048e+02  4a9c11f6-0193-4c8c-8da0-3acb15552124
+1      000fe16f2bca00d39f3494f6c55e7dfbfb7439d6b394df...    mse          Naive  4.406048e-01  2612f7e0-1597-429c-af7c-06ee9404cdf4
+2      001076a244bf14ed2f3867c77b29dac3859e5dacaf5d8b...    mse          Naive  7.143348e+03  2521e0bc-62fb-457b-a6d1-04dd47f2ab86
+3      001d00feb81bab52101fdee1f48fce6716d90f4e55896d...    mse          Naive  1.817806e+08  f4cdc1f1-9b5d-43b7-a0b4-57c89a51c63c
+4      00251b7431e37a2351c2198e7594a909ee30f32b418ea2...    mse          Naive  6.512022e+01  eb4dfd33-2edd-44ba-a674-b891a853fcf9
+...                                                  ...    ...            ...           ...                                   ...
+96820  ffc41f479454bc8e3318be723b07e9c1c3f8f2c17c3881...   rmse  combined-base  9.854804e-03  22be7594-695d-4598-bc08-aeb8a3073883
+96821  ffc62e4a688acf923d8e69991d7b92ee80ef30afbb0bee...   rmse  combined-base  9.487239e+00  f1d50c07-f5a0-4c7c-8512-b9e26608b8ac
+96822  ffe4b6e4595ec47845982e03616f3cc48901167c2ccc27...   rmse  combined-base  1.965174e+03  3fd75708-5871-4272-bdae-b090607453a8
+96823  ffec969ec359aa34e198740ee86ceb5f8ff4766fa6afbe...   rmse  combined-base  1.409205e-01  c9c8e571-2509-4db2-a24e-d23ca33532a6
+96824  fff0a6ac176c8fe37b04d36f21c6408d9f03c090f83932...   rmse  combined-base  3.305013e-01  59b3635b-ecbd-4192-b748-bd6d25ffa977
+
+[96825 rows x 5 columns] to S3
+2024-04-11 13:52:50,859 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 13:52:51,018 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 13:52:51,022 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 13:52:52,875 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 13:52:59,989 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 13:52:59,993 - __main__ - INFO - Forecast Only Minutes:  + 0.11865636110305786
+2024-04-11 13:53:01,728 - __main__ - INFO - Cross Validation Minutes:  + 0.015818512439727782
+2024-04-11 13:53:02,146 - __main__ - ERROR - Cannot write                                                unique_id metric         .model         value                                  UUID
+0      000111d79d89ee128ff0b685c298147df65d976ee68fdf...    mse          Naive  4.201307e+02  14cb2fec-f24e-4153-b0d1-b40bf87a1460
+1      000fe16f2bca00d39f3494f6c55e7dfbfb7439d6b394df...    mse          Naive  4.416971e-01  accc57c4-6f92-48af-ab2d-e68f17f965ee
+2      001076a244bf14ed2f3867c77b29dac3859e5dacaf5d8b...    mse          Naive  7.143307e+03  3acf60ba-b6b4-42d8-8264-e10617bc67f1
+3      001d00feb81bab52101fdee1f48fce6716d90f4e55896d...    mse          Naive  1.817807e+08  3d01f8d4-5bff-4d76-b267-ef4424281766
+4      00251b7431e37a2351c2198e7594a909ee30f32b418ea2...    mse          Naive  6.507427e+01  f91100ad-a19c-44c6-8329-b9d608fec86d
+...                                                  ...    ...            ...           ...                                   ...
+96820  ffc41f479454bc8e3318be723b07e9c1c3f8f2c17c3881...   rmse  combined-base  1.019474e-02  7a74362b-232e-406a-8dbb-435a45402a59
+96821  ffc62e4a688acf923d8e69991d7b92ee80ef30afbb0bee...   rmse  combined-base  9.487612e+00  50edd9c8-5501-40f1-8310-346bd0762e92
+96822  ffe4b6e4595ec47845982e03616f3cc48901167c2ccc27...   rmse  combined-base  1.965172e+03  3cc99afc-30e2-4b4e-b131-36925530dfdc
+96823  ffec969ec359aa34e198740ee86ceb5f8ff4766fa6afbe...   rmse  combined-base  1.408012e-01  a6d34828-6998-4bc0-ae26-2ecc07e88611
+96824  fff0a6ac176c8fe37b04d36f21c6408d9f03c090f83932...   rmse  combined-base  3.299936e-01  4d30ceae-ca09-4495-97b4-94d815da9fc5
+
+[96825 rows x 5 columns] to S3
+2024-04-11 13:53:58,455 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 13:53:58,614 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 13:53:58,618 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 13:54:00,462 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 13:54:07,630 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 13:54:07,634 - __main__ - INFO - Forecast Only Minutes:  + 0.11955435276031494
+2024-04-11 13:54:09,366 - __main__ - INFO - Cross Validation Minutes:  + 0.015705053011576334
+2024-04-11 14:08:09,061 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 14:08:09,218 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 14:08:09,222 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 14:09:11,063 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 14:09:11,221 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 14:09:11,226 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 14:09:53,129 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 14:10:00,317 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 14:10:00,321 - __main__ - INFO - Forecast Only Minutes:  + 0.11989376942316692
+2024-04-11 14:10:02,018 - __main__ - INFO - Cross Validation Minutes:  + 0.015554483731587727
+2024-04-11 14:25:15,506 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 14:25:15,663 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 14:25:15,668 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 14:25:55,477 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 14:26:02,622 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 14:26:02,626 - __main__ - INFO - Forecast Only Minutes:  + 0.119187331199646
+2024-04-11 14:26:04,304 - __main__ - INFO - Cross Validation Minutes:  + 0.015286099910736085
+2024-04-11 17:05:27,609 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 17:05:27,767 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 17:05:27,771 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 17:07:24,936 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 17:07:32,014 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 17:07:32,018 - __main__ - INFO - Forecast Only Minutes:  + 0.11807407935460408
+2024-04-11 17:11:01,038 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 17:11:01,044 - __main__ - INFO - Cross Validation Minutes:  + 0.11059845288594564
+2024-04-11 17:29:49,328 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-11 17:29:49,486 - __main__ - INFO - 1376 Unique accounts
+2024-04-11 17:29:49,491 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-11 17:31:51,935 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-11 17:31:58,880 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 17:31:58,883 - __main__ - INFO - Forecast Only Minutes:  + 0.11582151651382447
+2024-04-11 17:32:22,054 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-11 17:32:22,059 - __main__ - INFO - Cross Validation Minutes:  + 0.10903906424840291
+2024-04-12 08:48:03,495 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 08:48:03,652 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 08:48:03,656 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 08:49:42,629 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 08:49:49,715 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 08:49:49,719 - __main__ - INFO - Forecast Only Minutes:  + 0.11818553209304809
+2024-04-12 08:50:17,876 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 08:50:17,883 - __main__ - INFO - Cross Validation Minutes:  + 0.11807859738667806
+2024-04-12 08:57:50,542 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 08:57:50,699 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 08:57:50,703 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 09:02:29,559 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 09:02:29,716 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 09:02:29,721 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 09:04:26,811 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 09:04:33,656 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 09:04:33,659 - __main__ - INFO - Forecast Only Minutes:  + 0.11415353218714396
+2024-04-12 09:05:56,127 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 09:05:56,284 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 09:05:56,288 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 09:07:54,103 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 09:08:01,130 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 09:08:01,133 - __main__ - INFO - Forecast Only Minutes:  + 0.11719113190968831
+2024-04-12 09:08:31,256 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 09:08:31,260 - __main__ - INFO - Cross Validation Minutes:  + 0.10960594813028972
+2024-04-12 09:24:28,872 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 09:24:29,029 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 09:24:29,034 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 09:25:18,769 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 09:25:18,925 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 09:25:18,930 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 09:31:02,446 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 09:31:09,936 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 09:31:09,939 - __main__ - INFO - Forecast Only Minutes:  + 0.12492191394170125
+2024-04-12 09:31:35,460 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 09:31:35,465 - __main__ - INFO - Cross Validation Minutes:  + 0.11319096088409424
+2024-04-12 09:33:31,963 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 09:33:32,121 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 09:33:32,125 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 09:35:22,170 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 09:35:30,076 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 09:35:30,080 - __main__ - INFO - Forecast Only Minutes:  + 0.13185701370239258
+2024-04-12 09:35:39,334 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 09:35:39,340 - __main__ - INFO - Cross Validation Minutes:  + 0.12319983641306559
+2024-04-12 09:45:09,828 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 09:45:09,995 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 09:45:09,999 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 09:46:59,540 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 09:47:07,832 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 09:47:07,835 - __main__ - INFO - Forecast Only Minutes:  + 0.13829804658889772
+2024-04-12 09:47:17,559 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 09:47:17,564 - __main__ - INFO - Cross Validation Minutes:  + 0.1312695344289144
+2024-04-12 09:50:46,219 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 09:50:46,377 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 09:50:46,381 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 10:45:58,987 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 10:45:59,144 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 10:45:59,148 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 10:47:41,265 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 10:47:48,241 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 10:47:48,245 - __main__ - INFO - Forecast Only Minutes:  + 0.1163785696029663
+2024-04-12 10:47:56,704 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 10:47:56,710 - __main__ - INFO - Cross Validation Minutes:  + 0.11293258269627889
+2024-04-12 11:51:10,157 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 11:51:10,315 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 11:51:10,319 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 11:52:55,304 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 11:53:02,454 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 11:53:02,457 - __main__ - INFO - Forecast Only Minutes:  + 0.11926120122273763
+2024-04-12 11:53:10,939 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 11:53:10,944 - __main__ - INFO - Cross Validation Minutes:  + 0.11419233083724975
+2024-04-12 11:53:56,159 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 11:53:56,317 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 11:53:56,322 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 11:55:46,516 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 11:55:54,198 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 11:55:54,201 - __main__ - INFO - Forecast Only Minutes:  + 0.12812753518422446
+2024-04-12 11:56:03,205 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 11:56:03,210 - __main__ - INFO - Cross Validation Minutes:  + 0.12324091593424479
+2024-04-12 12:14:12,809 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 12:14:12,996 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 12:14:13,001 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 12:15:53,962 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 12:16:01,291 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 12:16:01,294 - __main__ - INFO - Forecast Only Minutes:  + 0.12227013111114501
+2024-04-12 12:16:11,127 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 12:16:11,133 - __main__ - INFO - Cross Validation Minutes:  + 0.1370266834894816
+2024-04-12 12:16:55,352 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 12:16:55,511 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 12:16:55,516 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 12:18:37,969 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 12:18:46,087 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 12:18:46,091 - __main__ - INFO - Forecast Only Minutes:  + 0.13539657195409138
+2024-04-12 12:18:54,731 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 12:18:54,736 - __main__ - INFO - Cross Validation Minutes:  + 0.11658034722010295
+2024-04-12 12:19:12,085 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 12:19:12,246 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 12:19:12,251 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 12:20:59,726 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 12:21:06,788 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 12:21:06,791 - __main__ - INFO - Forecast Only Minutes:  + 0.11779220104217529
+2024-04-12 12:21:15,800 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 12:21:15,808 - __main__ - INFO - Cross Validation Minutes:  + 0.12237448692321777
+2024-04-12 12:23:52,402 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 12:23:52,560 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 12:23:52,565 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 12:25:34,885 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 12:25:42,024 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 12:25:42,028 - __main__ - INFO - Forecast Only Minutes:  + 0.11908971468607585
+2024-04-12 12:25:50,743 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 12:25:50,749 - __main__ - INFO - Cross Validation Minutes:  + 0.11737231413523357
+2024-04-12 12:29:22,721 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 12:29:22,877 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 12:29:22,882 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 12:31:02,626 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 12:31:09,964 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 12:31:09,968 - __main__ - INFO - Forecast Only Minutes:  + 0.12242570320765177
+2024-04-12 12:31:19,984 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 12:31:19,990 - __main__ - INFO - Cross Validation Minutes:  + 0.1391499638557434
+2024-04-12 13:54:27,353 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 13:54:27,511 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 13:54:27,515 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 13:56:14,244 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 13:56:22,476 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 13:56:22,479 - __main__ - INFO - Forecast Only Minutes:  + 0.13730320533116658
+2024-04-12 13:56:32,408 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 13:56:32,413 - __main__ - INFO - Cross Validation Minutes:  + 0.13375666936238606
+2024-04-12 13:57:56,106 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 13:57:56,266 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 13:57:56,270 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 13:59:38,485 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 13:59:45,779 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 13:59:45,782 - __main__ - INFO - Forecast Only Minutes:  + 0.12165919939676921
+2024-04-12 13:59:55,275 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 13:59:55,281 - __main__ - INFO - Cross Validation Minutes:  + 0.1301287333170573
+2024-04-12 13:59:55,577 - __main__ - INFO - Index(['unique_id', 'metric', 'Naive', 'SeasonalNaive', 'combined'], dtype='object')
+2024-04-12 13:59:55,577 - __main__ - INFO - Index(['unique_id', 'metric', 'Naive', 'SeasonalNaive'], dtype='object')
+2024-04-12 14:06:07,011 - py.warnings - WARNING - /Users/tmb/PycharmProjects/data-science/UFE/core/_pre_process.py:114: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df['unique_id'] = df['ts_id']
+
+2024-04-12 14:06:07,169 - __main__ - INFO - 1376 Unique accounts
+2024-04-12 14:06:07,173 - __main__ - INFO - 1994595 total records from 2023-06-01 00:00:00 to 2024-04-04 00:00:00
+2024-04-12 14:07:56,237 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:399: FutureWarning: The `df` argument of the StatsForecast constructor as well as reusing stored dfs from other methods is deprecated and will raise an error in a future version. Please provide the `df` argument to the corresponding method instead, e.g. fit/forecast.
+  warnings.warn(
+
+2024-04-12 14:08:03,608 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 14:08:03,611 - __main__ - INFO - Forecast Only Minutes:  + 0.12294313112894693
+2024-04-12 14:08:12,435 - py.warnings - WARNING - /Users/tmb/.pyenv/versions/dataScience/lib/python3.11/site-packages/statsforecast/core.py:417: FutureWarning: In a future version the predictions will have the id as a column. You can set the `NIXTLA_ID_AS_COL` environment variable to adopt the new behavior and to suppress this warning.
+  warnings.warn(
+
+2024-04-12 14:08:12,442 - __main__ - INFO - Cross Validation Minutes:  + 0.11902799606323242

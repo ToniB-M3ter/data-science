@@ -46,11 +46,10 @@ class common_actions():
             data = gzip.GzipFile(fileobj=io.BytesIO(s3.Object(DATABUCKET, filepath + key).get()['Body'].read()),
                                  mode='rb').read()
             print('data')
-            print(data)
+            #print(data)
             with gzip.open(data, 'rb') as f_in:
                 with open(key, 'wb') as f_out:
                     shutil.copyfileobj(f_in, f_out)
-            print(key)
         return data_str
 
 class metadata():
