@@ -105,18 +105,10 @@ def main():
     #comb_forecasts = comb.avg_models(forecasts)
     #comb_forecasts.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/comb_forecasts.csv')
 
-    evaluation_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/evaluation_706dceed-70f3-49bb-9f77-426336f847c8.csv', index_col = 0)
-    all_forecasts = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/all_forecasts-706dceed-70f3-49bb-9f77-426336f847c8.csv', index_col=0)
-    #best_forecasts = eval.Evaluate.best_model_forecast(all_forecasts, evaluation_df)
-
-    evaluation_df = pd.read_csv(
-        '/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/evaluation_b61a592d-131d-407d-bf64-37c4040c1913.csv',
-        index_col=0)
-    xval_eval = pd.read_csv(
-        '/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/xval_eval_b61a592d-131d-407d-bf64-37c4040c1913.csv',
-        index_col=0)
-    evaluation_df = pd.merge(xval_eval, evaluation_df[['unique_id', 'metric','combined']], on=['unique_id', 'metric'], how='left')
-    print(evaluation_df.head())
+    evaluation_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/evaluation_c0b42b28-f0d1-4d7c-802d-3866e198ac5f.csv', index_col = 0)
+    all_forecasts = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/all_forecasts-c0b42b28-f0d1-4d7c-802d-3866e198ac5f.csv', index_col=0)
+    best_forecasts = eval.Evaluate.best_model_forecast(all_forecasts, evaluation_df)
+    best_forecasts.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/best_forecasts_test.csv')
 
     #simple_evaluation()
     #reformat_evaluation()

@@ -166,6 +166,8 @@ def main(freq):
 
         # Validate
         evaluation_df = eval.Evaluate.evaluate_simple(dfUsage_clean, all_forecasts, metrics)
+        all_forecasts.to_csv(
+            f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/all_forecasts_after_simple_eval.csv')
         evaluation_df.to_csv(
             f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/evaluation_{file_UID}.csv')
 
@@ -178,24 +180,24 @@ def main(freq):
             xval_eval = eval.Evaluate.score_cross_validation(crossvalidation_df, metrics)
             xval_eval.to_csv(
                 f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/xval_eval_{file_UID}.csv')
-            evaluation_df = pd.merge(xval_eval, evaluation_df[['unique_id', 'metric','combined']], on=['unique_id', 'metric'], how='left')
+            evaluation_df = pd.merge(xval_eval, evaluation_df[['unique_id', 'metric','Combined']], on=['unique_id', 'metric'], how='left')
 
         evaluation_df.to_csv(
             f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/evaluation_{file_UID}.csv')
 
         # select best model for display in dashboard
-        best_forecasts = eval.Evaluate.best_model_forecast(all_forecasts, evaluation_df)
+        best_forecasts, evaluation_df, summary_df = eval.Evaluate.best_model_forecast(all_forecasts, evaluation_df)
         best_forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/best_forecasts.csv')
 
         # reformat evaluation data and save]
         # Add UUID to model
         UID_list = [utils.generate_uid() for x in ts_models]
         model_codes = pd.DataFrame({'model': ts_models, 'UUID': UID_list})
-        model_codes.loc[len(df.index)] = ['combined', utils.generate_uid()] #add entry for combined
+        model_codes.loc[len(model_codes.index)] = ['Combined', utils.generate_uid()] #add entry for combined
         eval_reformat = eval.Evaluate.reformat(evaluation_df)
 
-        #if USER is None:
-        if 1==1:
+        if USER is None:
+        #if 1==1:
         # reformat for saving to s3
             try:
                 rw.logs.write_csv_log_to_S3(eval_reformat, 'eval_reformat', forecast_folder)
@@ -204,9 +206,6 @@ def main(freq):
         else:
             eval_reformat.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/eval_reformat_{file_UID}.csv')
 
-        summary_df = evaluation_df.groupby('best_model').size().sort_values().to_frame()
-        summary_df.reset_index().columns = ["Model", "Nr. of unique_ids"]
-        summary_df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/summary_df.csv')
 
         # Save
         if len(all_forecasts) > 0:

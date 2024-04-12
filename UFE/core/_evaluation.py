@@ -15,8 +15,10 @@ from utilsforecast.losses import (
     scaled_crps, # scaled continues ranked probability score
     )
 
-
+module_logger = logging.getLogger('UFE.evaluation')
+logger = logging.getLogger('URE.evaluation')
 class ErrorAnalysis():
+
     def mse_calc(y, y_hat):
         return np.mean((y - y_hat) ** 2)
 
@@ -64,12 +66,14 @@ class Evaluate():
         self.h = h
 
     def evaluate_simple(actuals, forecasts, metrics):
-        # check if combine lo/hi cols in forecasts, and if so drop them
+        # check if combined lo/hi cols in forecasts, and if so drop them
         comb_cols = [x for x in forecasts.columns if 'combined' in x]
         if comb_cols:
-            forecasts.drop(['combined-lo', 'combined-hi'], axis=1, inplace=True)
+            base_forecasts = forecasts.drop(['combined-lo-95', 'combined-hi-95'], axis=1)
+            valid = pd.merge(base_forecasts, actuals, on=['unique_id', 'ds'], how='outer') # combine actuals and forecasts for evaluation
+        else:
+            valid = pd.merge(forecasts, actuals, on=['unique_id', 'ds'], how='outer')
 
-        valid = pd.merge(forecasts, actuals, on=['unique_id', 'ds'], how='outer') # combine actuals and forecasts for evaluation
         valid.fillna(0, inplace=True)
         valid.sort_values(['unique_id', 'ds'], inplace=True)
         evals = evaluate(valid, metrics=metrics)
@@ -98,7 +102,7 @@ class Evaluate():
         #evals['best_model'] = evals.idxmin(axis=1)
         return evals
 
-    def get_best_model_forecast(forecasts_df, evaluation_df):
+    def best_model_forecast_old(forecasts_df, evaluation_df):
         df = forecasts_df.set_index('ds', append=True).stack().to_frame().reset_index(level=2)  # Wide to long
         df.columns = ['model', 'best_model_forecast']
         df = df.join(evaluation_df[['best_model']])
@@ -112,6 +116,10 @@ class Evaluate():
     def best_model_forecast(forecasts_df, evals):
         evals = evals.groupby('unique_id').mean(numeric_only=True)  # Averages the error metrics for all cutoffs for every combination of model and unique_id
         evals['best_model'] = evals.idxmin(axis=1)
+
+        summary_df = evals.groupby('best_model').size().sort_values().to_frame()
+        summary_df.reset_index().columns = ["Model", "Nr. of unique_ids"]
+
         df = forecasts_df.set_index('ds', append=True).stack().to_frame().reset_index(level=2)  # Wide to long
         df.columns = ['model', 'best_model_forecast']
         df = df.join(evals[['best_model']])
@@ -120,9 +128,10 @@ class Evaluate():
         df = df.drop(columns='best_model').set_index('model', append=True).unstack()
         df.columns = df.columns.droplevel()
         df = df.reset_index(level=1)
-        return df
+        return df, evals, summary_df
 
     def reformat(evaluation_df):
+        evaluation_df.reset_index(inplace=True)
         eval_reformatted = pd.melt(evaluation_df, id_vars=['unique_id', 'metric'], var_name='.model',
                                    value_name='value')
         df_models = eval_reformatted[['unique_id', '.model']].drop_duplicates()
