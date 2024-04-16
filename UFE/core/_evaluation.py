@@ -131,7 +131,8 @@ class Evaluate():
         return df, evals, summary_df
 
     def reformat(evaluation_df):
-        evaluation_df.reset_index(inplace=True)
+        #evaluation_df.reset_index(level=['unique_id', 'metric'], inplace=True)
+        #print(evaluation_df.columns)
         eval_reformatted = pd.melt(evaluation_df, id_vars=['unique_id', 'metric'], var_name='.model',
                                    value_name='value')
         df_models = eval_reformatted[['unique_id', '.model']].drop_duplicates()

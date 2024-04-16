@@ -68,7 +68,7 @@ n_jobs = -1
 hpct = 0.15
 predict_int = 95
 add_noise = 'Y'
-models_indices = [0,2] #[0, 2, 3, 4, 5, 6, 7, 8, 9]
+models_indices = [0, 2, 3, 4, 5, 6, 7, 8, 9] #[0,2]
 
 # evaluation parms
 xval= 'Y'
@@ -165,13 +165,9 @@ def main(freq):
             all_forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/all_forecasts-{file_UID}.csv')
 
         # Validate
-        evaluation_df = eval.Evaluate.evaluate_simple(dfUsage_clean, all_forecasts, metrics)
-        all_forecasts.to_csv(
-            f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/all_forecasts_after_simple_eval.csv')
-        evaluation_df.to_csv(
-            f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/evaluation_{file_UID}.csv')
+        scores_df = eval.Evaluate.evaluate_simple(dfUsage_clean, all_forecasts, metrics)
 
-        # if we are cross validating there is an extra step
+        # if we are cross validating there are extra steps
         if xval=='Y':
             init_xval = time()
             crossvalidation_df = eval.Evaluate.cross_validate(df_to_forecast, model, h, n_win)
@@ -180,21 +176,22 @@ def main(freq):
             xval_eval = eval.Evaluate.score_cross_validation(crossvalidation_df, metrics)
             xval_eval.to_csv(
                 f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/xval_eval_{file_UID}.csv')
-            evaluation_df = pd.merge(xval_eval, evaluation_df[['unique_id', 'metric','Combined']], on=['unique_id', 'metric'], how='left')
+            scores_df = pd.merge(xval_eval, scores_df[['unique_id', 'metric','Combined']], on=['unique_id', 'metric'], how='left')
 
-        evaluation_df.to_csv(
-            f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/evaluation_{file_UID}.csv')
+        scores_df.to_csv(
+            f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/scores_{file_UID}.csv')
 
         # select best model for display in dashboard
-        best_forecasts, evaluation_df, summary_df = eval.Evaluate.best_model_forecast(all_forecasts, evaluation_df)
-        best_forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/best_forecasts.csv')
+        best_forecasts, evaluation_w_best_model, summary_df = eval.Evaluate.best_model_forecast(all_forecasts, scores_df) # evaluation_df best model name
+        evaluation_w_best_model.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/eval_w_bm.csv')
+        best_forecasts.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/best_forecasts.csv') # to save for dashboard
 
         # reformat evaluation data and save]
         # Add UUID to model
         UID_list = [utils.generate_uid() for x in ts_models]
         model_codes = pd.DataFrame({'model': ts_models, 'UUID': UID_list})
         model_codes.loc[len(model_codes.index)] = ['Combined', utils.generate_uid()] #add entry for combined
-        eval_reformat = eval.Evaluate.reformat(evaluation_df)
+        eval_reformat = eval.Evaluate.reformat(scores_df)
 
         if USER is None:
         #if 1==1:
@@ -209,11 +206,11 @@ def main(freq):
 
         # Save
         if len(all_forecasts) > 0:
-            forecast_to_save = rw.tsdata.prep_forecast_for_s3(best_forecasts, df_ids, evaluation_df)
+            forecast_to_save = rw.tsdata.prep_forecast_for_s3(best_forecasts, df_ids, evaluation_w_best_model) # save best forecasts for dashboard
+            # TODO Then save forecasts model by model to forecasts folder
             #if USER is None:
             if 1==1:
-                rw.tsdata.write_gz_csv_to_s3(forecast_to_save, forecast_folder + freq + '/',
-                                        'best_' + dt.today().strftime("%Y_%d_%m") + '_' + 'usage.gz')
+                rw.tsdata.write_gz_csv_to_s3(forecast_to_save, forecast_folder + freq + '/', 'best_' + dt.today().strftime("%Y_%m_%d") + '_usage.gz')
                 storedFileNameBase=rw.metadata.write_dict_to_textfile() # pass metaDict if created, e.g. metadata_str
                 rw.metadata.write_meta_tmp(storedFileNameBase)
                 rw.metadata.gz_upload(storedFileNameBase, forecast_folder + freq + '/')

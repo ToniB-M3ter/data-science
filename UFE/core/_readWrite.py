@@ -88,8 +88,8 @@ class metadata():
 
     # saving for later use
     def write_dict_to_textfile(metaDict=None):
-        storedFileNameBase = "best_usage_meta".format(dt.today().strftime("%Y_%d_%m"))
-        storedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.txt'
+        storedFileNameBase = "best_{}_usage_meta".format(dt.today().strftime("%Y_%m_%d"))
+        storedFileName = "{}".format(dt.today().strftime("%Y_%m_%d")) + '_' + storedFileNameBase + '.txt'
         output = open("/tmp/" + storedFileName, "w")
         if metaDict:
             pass
@@ -112,8 +112,8 @@ class metadata():
         return storedFileNameBase
 
     def write_meta_tmp(storedFileNameBase):
-        storedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.txt'
-        savedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.gz'
+        storedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.txt'
+        savedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.gz'
         with open("/tmp/{}".format(storedFileName), 'rb') as f_in:
             with gzip.open("/tmp/{}".format(savedFileName), 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
@@ -122,7 +122,7 @@ class metadata():
 
     def gz_upload(storedFileNameBase, filepath):
         # fileName = 'hier_2024_03_18_usage_meta.gz'
-        savedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.gz'
+        savedFileName = "{}".format(dt.today().strftime("%Y_%m_%d")) + '_' + storedFileNameBase + '.gz'
         with open("/tmp/{}".format(savedFileName), 'rb') as f_in:
             gzipped_content = gzip.compress(f_in.read())
             s3client.upload_fileobj(
@@ -210,17 +210,17 @@ class tsdata():
         # df.dropna(subset=['y'], inplace = True)
         return df
 
-    def prep_forecast_for_s3(df: pd.DataFrame, df_ids, evaluation_df):
-        df.reset_index(inplace=True)
+    def prep_forecast_for_s3(df: pd.DataFrame, df_ids, evaluation_df):  #best_forecasts, df_ids, evaluation_w_best_model
+        #df.reset_index(inplace=True)
         evaluation_df.reset_index(inplace=True)
 
         dashboard_cols = [
-            'tm'  # timestamp
+            'ts_id'  # time series unique id
             , 'meter'
             , 'measure'
-            , 'account_cd'  # account m3ter uid
             , 'account_nm'
-            , 'ts_id'  # time series unique id
+            , 'account_cd'  # account m3ter uid
+            , 'tm'  # timestamp
             , 'z'  # prediction
             , 'z0'  # lower bound of 95% confidence interval
             , 'z1'  # lower bound of 95% confidence interval
@@ -231,7 +231,7 @@ class tsdata():
         df_ids.columns = ['account_cd', 'account_nm', 'meter', 'measure', 'unique_id']
         df = pd.merge(df, df_ids, how='left', on='unique_id')
         df.rename(columns={'unique_id': 'ts_id', 'best_model_y': '.model'}, inplace=True)
-        df.sort_values(['account_cd', 'meter', 'ds'], inplace=True)
+        df.sort_values(['ts_id', 'meter', 'ds'], inplace=True)
 
         if USER is None:
             pass
