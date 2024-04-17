@@ -179,8 +179,8 @@ class metadata():
         return storedFileNameBase
 
     def write_meta_tmp(storedFileNameBase):
-        storedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.txt'
-        savedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.gz'
+        storedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.txt'
+        savedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.gz'
         with open("/tmp/{}".format(storedFileName), 'rb') as f_in:
             with gzip.open("/tmp/{}".format(savedFileName), 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
