@@ -175,7 +175,7 @@ class metadata():
                         '_intrvl': '1D'}
         # json.dump(testDict, open('/tmp/test.txt', 'w'))
         for k, v in metaDict.items():
-            output.writelines(f'{k} {v}\n')
+            output.writelines(f'{k},{v}\n')
         return storedFileNameBase
 
     def write_meta_tmp(storedFileNameBase):
@@ -189,7 +189,7 @@ class metadata():
 
     def gz_upload(storedFileNameBase, filepath):
         # fileName = 'hier_2024_03_18_usage_meta.gz'
-        savedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.gz'
+        savedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.gz'
         with open("/tmp/{}".format(savedFileName), 'rb') as f_in:
             gzipped_content = gzip.compress(f_in.read())
             s3client.upload_fileobj(
