@@ -7,7 +7,7 @@ def avg_models(base_forecasts: DataFrame)-> DataFrame:
     hi_cols = [x for x in base_forecasts.columns if 'hi' in x]
     base_cols = [y for y in base_forecasts if y not in lo_cols and y not in hi_cols and y not in other_cols]
 
-    coltypes = [lo_cols, hi_cols, base_cols]
+    coltypes = [base_cols, lo_cols, hi_cols]
     coltypesnames = ['base', 'lo-95', 'hi-95']
     for coltype, coltypename in zip(coltypes, coltypesnames):
         base_forecasts['Combined-' + coltypename ] = round(base_forecasts[list(coltype)].sum(axis=1)/len(list(coltype)), 3)

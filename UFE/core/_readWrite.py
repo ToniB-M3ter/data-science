@@ -89,7 +89,7 @@ class metadata():
     # saving for later use
     def write_dict_to_textfile(metaDict=None):
         storedFileNameBase = "best_{}_usage_meta".format(dt.today().strftime("%Y_%m_%d"))
-        storedFileName = "{}".format(dt.today().strftime("%Y_%m_%d")) + '_' + storedFileNameBase + '.txt'
+        storedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.txt'
         output = open("/tmp/" + storedFileName, "w")
         if metaDict:
             pass
@@ -108,7 +108,7 @@ class metadata():
                         '_intrvl': '1D'}
         # json.dump(testDict, open('/tmp/test.txt', 'w'))
         for k, v in metaDict.items():
-            output.writelines(f'{k} {v}\n')
+            output.writelines(f'{k},{v}\n')
         return storedFileNameBase
 
     def write_meta_tmp(storedFileNameBase):
@@ -122,7 +122,7 @@ class metadata():
 
     def gz_upload(storedFileNameBase, filepath):
         # fileName = 'hier_2024_03_18_usage_meta.gz'
-        savedFileName = "{}".format(dt.today().strftime("%Y_%m_%d")) + '_' + storedFileNameBase + '.gz'
+        savedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.gz'
         with open("/tmp/{}".format(savedFileName), 'rb') as f_in:
             gzipped_content = gzip.compress(f_in.read())
             s3client.upload_fileobj(
@@ -230,8 +230,10 @@ class tsdata():
         df = pd.merge(df, evaluation_df[['unique_id', 'best_model']], how='left', on='unique_id')
         df_ids.columns = ['account_cd', 'account_nm', 'meter', 'measure', 'unique_id']
         df = pd.merge(df, df_ids, how='left', on='unique_id')
-        df.rename(columns={'unique_id': 'ts_id', 'best_model_y': '.model'}, inplace=True)
-        df.sort_values(['ts_id', 'meter', 'ds'], inplace=True)
+        df['tm'] = pd.to_datetime(df['ds']).dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+        df.rename(columns={'unique_id': 'ts_id', 'best_model_y': '.model', 'best_model-lo-95':'z0','best_model_x':'z','best_model-hi-95':'z1'}, inplace=True) #TODO make generic, read column headers?
+        df.sort_values(['ts_id', 'tm'], inplace=True)
+        df = df[dashboard_cols]
 
         if USER is None:
             pass

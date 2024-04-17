@@ -37,7 +37,7 @@ pd.set_option('display.max_rows', 5)
 11  OptimizedTheta
 """
 
-dfUsage = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/dfUsage.csv',  parse_dates=['ds'])
+#dfUsage = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/onfido/dfUsage.csv',  parse_dates=['ds'])
 ids = ['980576b982cf369a3c00735bb78feb7575304eac08e53d56e07e420296ae0b7d',
        '2c82fa602e85fa401b9d8aca2b590c1549c3dfbbeff2cf1b20b3b60adcf8515c',
         '86ec7c5729d2ec4a39a29a5efb0b28387d711984ee6f80db758aa492494b49e1',
@@ -105,10 +105,15 @@ def main():
     #comb_forecasts = comb.avg_models(forecasts)
     #comb_forecasts.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/comb_forecasts.csv')
 
-    evaluation_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/evaluation_c0b42b28-f0d1-4d7c-802d-3866e198ac5f.csv', index_col = 0)
-    all_forecasts = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/all_forecasts-c0b42b28-f0d1-4d7c-802d-3866e198ac5f.csv', index_col=0)
-    best_forecasts = eval.Evaluate.best_model_forecast(all_forecasts, evaluation_df)
-    best_forecasts.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/best_forecasts_test.csv')
+    #evaluation_df = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/evaluation_c0b42b28-f0d1-4d7c-802d-3866e198ac5f.csv', index_col = 0)
+    #all_forecasts = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/all_forecasts-c0b42b28-f0d1-4d7c-802d-3866e198ac5f.csv', index_col=0)
+    #best_forecasts = eval.Evaluate.best_model_forecast(all_forecasts, evaluation_df)
+    #best_forecasts.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/best_forecasts_test.csv')
+
+    best_forecasts = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/best_forecasts.csv')
+    best_forecasts['tm'] = pd.to_datetime(best_forecasts['ds']).dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+    print(best_forecasts['tm'][0:5])
+    print(best_forecasts.info())
 
     #simple_evaluation()
     #reformat_evaluation()

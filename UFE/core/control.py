@@ -113,8 +113,8 @@ def main(freq):
     logger.info(str(tidydata['account_cd'].nunique()) + ' Unique accounts')
     logger.info(str(len(tidydata)) + ' total records from ' + str(tidydata['tm'].min()) + ' to ' + str(tidydata['tm'].max()))
 
-    #if USER is None:
-    if 1==1:
+    if USER is None:
+    #if 1==1:
         rw.logs.write_csv_log_to_S3(dfUsage_clean, 'dfUsage_clean', logs_folder)
         rw.logs.write_csv_log_to_S3(dfUsage_clean, 'df_ids', logs_folder)
     else:

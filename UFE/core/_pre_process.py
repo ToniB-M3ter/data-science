@@ -106,11 +106,6 @@ def clean_data(raw_df: pd.DataFrame, datetime_col: str, y: str, startdate, endda
 
     print('compare df_ids, ' + str(len(df_ids)) + ' to df_ts_ids, ' + str(len(df_ts_ids)))
 
-    if USER is None:
-        rw.write_csv_log_to_S3(df_ids, 'df_ids')
-    else:
-        df_ids.to_csv('/Users/tmb/PycharmProjects/data-science/UFEPOC/output_files/df_ids.csv')
-
     df['unique_id'] = df['ts_id']
     df = df[[datetime_col, y, 'unique_id']]
     df.columns = ['ds', 'y', 'unique_id']
