@@ -6,6 +6,7 @@ import _pre_process as preproc
 import _combine_forecasts as comb
 import _evaluation as eval
 import _stats_fit_forecast as fitfrct
+import _readWrite as rw
 
 from utilsforecast.evaluation import evaluate
 from utilsforecast.losses import (
@@ -110,10 +111,22 @@ def main():
     #best_forecasts = eval.Evaluate.best_model_forecast(all_forecasts, evaluation_df)
     #best_forecasts.to_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/best_forecasts_test.csv')
 
-    best_forecasts = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/best_forecasts.csv')
-    best_forecasts['tm'] = pd.to_datetime(best_forecasts['ds']).dt.strftime('%Y-%m-%dT%H:%M:%SZ')
-    print(best_forecasts['tm'][0:5])
-    print(best_forecasts.info())
+    #best_forecasts = pd.read_csv('/Users/tmb/PycharmProjects/data-science/UFE/output_files/onfido/best_forecasts.csv')
+    #best_forecasts['tm'] = pd.to_datetime(best_forecasts['ds']).dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+    #print(best_forecasts['tm'][0:5])
+    #print(best_forecasts.info())
+
+    metaDict = {'test1':'one',
+                'test2':'two'
+                }
+
+    fileNamebase = rw.metadata.write_dict_to_textfile(metaDict)
+    savedFileName = rw.metadata.write_meta_tmp(fileNamebase)
+    rw.metadata.gz_upload(savedFileName, '4_forecast/1D/')
+
+    with open('/tmp/best_2024_04_18_usage_meta.gz', 'rb') as test_f:
+        print(test_f.read(2) == b'\x1f\x8b')
+        return test_f.read(2) == b'\x1f\x8b'
 
     #simple_evaluation()
     #reformat_evaluation()

@@ -87,9 +87,11 @@ class metadata():
         return dimkey_list
 
     # saving for later use
+    @staticmethod
     def write_dict_to_textfile(metaDict=None):
-        storedFileNameBase = "best_{}_usage_meta".format(dt.today().strftime("%Y_%m_%d"))
-        storedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.txt'
+        fileNameBase = "best_{}_usage_meta".format(dt.today().strftime("%Y_%m_%d"))
+        storedFileName = fileNameBase + '.txt'
+        logger.info(storedFileName)
         output = open("/tmp/" + storedFileName, "w")
         if metaDict:
             pass
@@ -106,23 +108,23 @@ class metadata():
                         'z1': 'measure',
                         '.model': 'dim',
                         '_intrvl': '1D'}
-        # json.dump(testDict, open('/tmp/test.txt', 'w'))
         for k, v in metaDict.items():
             output.writelines(f'{k},{v}\n')
-        return storedFileNameBase
+        return fileNameBase
 
-    def write_meta_tmp(storedFileNameBase):
-        storedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.txt'
-        savedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.gz'
+    @staticmethod
+    def write_meta_tmp(fileNameBase):
+        storedFileName = fileNameBase +'.txt'
+        savedFileName = fileNameBase + '.gz'
         with open("/tmp/{}".format(storedFileName), 'rb') as f_in:
             with gzip.open("/tmp/{}".format(savedFileName), 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
                 # f.write(content.encode("utf-8"))
-        return
+        return savedFileName
 
-    def gz_upload(storedFileNameBase, filepath):
-        # fileName = 'hier_2024_03_18_usage_meta.gz'
-        savedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.gz'
+    @staticmethod
+    def gz_upload(savedFileName, filepath):
+        #savedFileName = storedFileNameBase+"{}_".format(dt.today().strftime("%Y_%m_%d")) + storedFileNameBase + '.gz'
         with open("/tmp/{}".format(savedFileName), 'rb') as f_in:
             gzipped_content = gzip.compress(f_in.read())
             s3client.upload_fileobj(
@@ -151,53 +153,6 @@ class metadata():
         f_meta.close()
 
         self.convert_text_to_zip() # convert tmp file to .gz for loading to s3
-
-    # save metadata file to S3
-
-    def write_dict_to_textfile(metaDict=None):
-        storedFileNameBase = "best_usage_meta".format(dt.today().strftime("%Y_%d_%m"))
-        storedFileName = "{}".format(dt.today().strftime("%Y_%d_%m")) + '_' + storedFileNameBase + '.txt'
-        output = open("/tmp/" + storedFileName, "w")
-        if metaDict:
-            pass
-        else:
-            metaDict = {'nm,': 'type',
-                        'ts_id': 'ts_id',
-                        'account_cd': 'dim',
-                        'account_nm': 'dim',
-                        'meter': 'dim',
-                        'measure': 'dim',
-                        'tm': 'time',
-                        'z': 'measure',
-                        'z0': 'measure',
-                        'z1': 'measure',
-                        '.model': 'dim',
-                        '_intrvl': '1D'}
-        # json.dump(testDict, open('/tmp/test.txt', 'w'))
-        for k, v in metaDict.items():
-            output.writelines(f'{k},{v}\n')
-        return storedFileNameBase
-
-    def write_meta_tmp(storedFileNameBase):
-        storedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.txt'
-        savedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.gz'
-        with open("/tmp/{}".format(storedFileName), 'rb') as f_in:
-            with gzip.open("/tmp/{}".format(savedFileName), 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-                # f.write(content.encode("utf-8"))
-        return
-
-    def gz_upload(storedFileNameBase, filepath):
-        # fileName = 'hier_2024_03_18_usage_meta.gz'
-        savedFileName = "storedFileNameBase_{}".format(dt.today().strftime("%Y_%m_%d")) + '.gz'
-        with open("/tmp/{}".format(savedFileName), 'rb') as f_in:
-            gzipped_content = gzip.compress(f_in.read())
-            s3client.upload_fileobj(
-                BytesIO(gzipped_content),
-                DATABUCKET,
-                filepath + savedFileName,
-                ExtraArgs={"ContentType": "text/plain", "ContentEncoding": "gzip"}
-            )
 
 class tsdata():
     def get_data(filepath, key, cols):
@@ -234,12 +189,6 @@ class tsdata():
         df.rename(columns={'unique_id': 'ts_id', 'best_model_y': '.model', 'best_model-lo-95':'z0','best_model_x':'z','best_model-hi-95':'z1'}, inplace=True) #TODO make generic, read column headers?
         df.sort_values(['ts_id', 'tm'], inplace=True)
         df = df[dashboard_cols]
-
-        if USER is None:
-            pass
-            logs.write_csv_log_to_S3(df, 'dfBest')
-        else:
-            df.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/dfBest.csv')
         return df
 
     def write_gz_csv_to_s3(df, filepath, key): # TODO merge with logs.write_csv_log_to_S3??

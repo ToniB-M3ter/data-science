@@ -67,12 +67,12 @@ logs_folder = 'logs/'
 n_jobs = -1
 hpct = 0.15
 predict_int = 95
-add_noise = 'Y'
-models_indices = [0, 2, 3, 4, 5, 6, 7, 8, 9] #[0,2]
+add_noise = 'N'
+models_indices = [0,2] #[0, 2, 3, 4, 5, 6, 7, 8, 9] #[0,2]
 
 # evaluation parms
-xval= 'Y'
-n_win = 3
+xval= 'N'
+n_win = 1
 metrics =[mse,  # mean square error
                 mape,  # mean absolute percentage error
                 #mae,  # mean absolute error
@@ -210,10 +210,12 @@ def main(freq):
             # TODO Then save forecasts model by model to forecasts folder
             #if USER is None:
             if 1==1:
+                rw.logs.write_csv_log_to_S3(forecast_to_save, 'Best_forecasts', logs_folder)
+
                 rw.tsdata.write_gz_csv_to_s3(forecast_to_save, forecast_folder + freq + '/', 'best_' + dt.today().strftime("%Y_%m_%d") + '_usage.gz')
-                storedFileNameBase=rw.metadata.write_dict_to_textfile() # pass metaDict if created, e.g. metadata_str
-                rw.metadata.write_meta_tmp(storedFileNameBase)
-                rw.metadata.gz_upload(storedFileNameBase, forecast_folder + freq + '/')
+                fileNameBase = rw.metadata.write_dict_to_textfile() # pass metaDict if created, e.g. metadata_str
+                savedFileName = rw.metadata.write_meta_tmp(fileNamebase)
+                rw.metadata.gz_upload(savedFileName, forecast_folder + freq + '/')
                 #rs3.write_meta_to_s3(metadata_str, freq, forecast_folder + freq + '/', 'best_' + dt.today().strftime("%Y_%d_%m") + '_' + 'hier_2024_03_04_usage_meta.gz')
             else:
                 forecast_to_save.to_csv(f'/Users/tmb/PycharmProjects/data-science/UFE/output_files/{ORG}/best_forecast_{file_UID}.csv') # TODO define UID
